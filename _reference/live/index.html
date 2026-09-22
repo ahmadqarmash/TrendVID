@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-28Y2VHF39E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-28Y2VHF39E');
+</script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <!-- Impact verification -->
+  <meta name="impact-site-verification" content="0de35687-ed81-46f4-8940-5bd4102e4b75">
+
+  <title>TrendVid</title>
+
+  <!-- === SEO ADDITION START: Dynamic Meta === -->
+  <meta name="description" content="Discover trending and most viewed YouTube videos by country, category, and language on TrendVid. Updated frequently." />
+  <link rel="canonical" href="https://trendvid.net/" />
+
+  <meta property="og:site_name" content="TrendVid" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Trending YouTube Videos | TrendVid" />
+  <meta property="og:description" content="Explore trending and most viewed YouTube videos worldwide, organized by country and category." />
+  <meta property="og:url" content="https://trendvid.net/" />
+  <!-- === SEO ADDITION END === -->
+
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="preconnect" href="https://www.youtube.com">
+  <link rel="preconnect" href="https://www.google.com">
+  <link rel="stylesheet" href="/assets/css/style.css" />
+
+  <!-- Google AdSense (client) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7235869092973329"
+     crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <a class="brandLink" href="/"><span class="brandText">TrendVid</span></a>
+    </div>
+
+    <div class="controls">
+      <div class="control">
+        <label id="lblCountry" for="countrySelect">Country</label>
+        <select id="countrySelect" class="select"></select>
+      </div>
+
+      <div class="control">
+        <label id="lblCategory" for="categorySelect">Category</label>
+        <select id="categorySelect" class="select"></select>
+      </div>
+
+      <div class="control">
+        <label id="lblLang" for="langSelect">Language</label>
+        <select id="langSelect" class="select">
+          <option value="en">EN</option>
+          <option value="ar">AR</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="rightControls">
+      <div class="segmented" role="tablist" aria-label="Mode">
+        <button id="btnTrending" class="segBtn active" type="button">Trending</button>
+        <button id="btnViews" class="segBtn" type="button">Most Viewed</button>
+      </div>
+
+      <button id="themeToggle" class="iconBtn" type="button" title="Toggle theme" aria-label="Toggle theme">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+
+<!-- Hero Section -->
+<section class="hero">
+  <p id="heroText" class="hero-text"></p>
+  <button id="heroCTA" class="hero-cta" type="button"></button>
+</section>
+
+
+    <!-- === SEO ADDITION START: Text Content === -->
+    <section id="seoText" class="seo-text" style="display:none">
+      <h1 id="seoTitle">Trending YouTube Videos</h1>
+      <p id="seoDescription">
+        TrendVid helps you discover trending and most viewed YouTube videos by country, category, and language.
+        All videos are embedded directly from YouTube and remain the property of their respective owners.
+      </p>
+    </section>
+    <!-- === SEO ADDITION END === -->
+
+    <div class="metaRow">
+      <div id="statusText" class="status">Loading…</div>
+
+      <div class="pagerMini">
+        <button id="btnPrev" class="btn" type="button" disabled>Previous</button>
+        <div id="pageIndicator" class="pageIndicator">1</div>
+        <button id="btnNext" class="btn" type="button" disabled>Next</button>
+      </div>
+    </div>
+
+    <section id="grid" class="grid"></section>
+
+    <section class="adWrap">
+      <div class="adBox">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-7235869092973329"
+             data-ad-slot="4003830709"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+      </div>
+    </section>
+
+    <section class="adWrap">
+      <div class="adBox">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-7235869092973329"
+             data-ad-slot="4003830709"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+      </div>
+    </section>
+  </main>
+
+  <!-- Smart Offer Banner -->
+  <div id="smart-offer" class="smart-offer">
+    <a id="offer-link" href="#" target="_blank" rel="nofollow sponsored">
+      <span id="offer-text">🔥 Translate trending videos instantly</span>
+      <button id="offer-btn">Try it free</button>
+    </a>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="about.html">About</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+    </div>
+
+    <div class="footer-disclaimer">
+      All videos are embedded from YouTube and remain the property of their respective owners.
+    </div>
+  </footer>
+
+  <!-- Video Modal -->
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modalOverlay" id="modalOverlay"></div>
+    <div class="modalCard" role="dialog" aria-modal="true" aria-label="Video player">
+      <button id="modalClose" class="modalClose" type="button" aria-label="Close">×</button>
+      <div class="modalPlayer">
+        <iframe id="playerFrame" src="" title="YouTube video player"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen></iframe>
+      </div>
+      <div class="modalMeta">
+        <div id="modalTitle" class="modalTitle"></div>
+        <div id="modalSub" class="modalSub"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === SEO ADDITION START: Schema Hook === -->
+  <script id="schema-json" type="application/ld+json">{}</script>
+  <!-- === SEO ADDITION END === -->
+
+  <script src="/assets/js/app.js"></script>
+  <script>
+    try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+    try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+    try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+  </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"2b9047c2849a433991d830c869dfe590","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

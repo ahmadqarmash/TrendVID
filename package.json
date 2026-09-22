@@ -1,0 +1,25 @@
+{
+  "name": "trendvid",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TrendVid - trending and most-viewed YouTube directory: static site (Cloudflare Pages) + API (Cloudflare Worker).",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test --test-reporter=spec",
+    "check": "node scripts/check-syntax.mjs",
+    "verify": "npm run check && npm test",
+    "serve": "node scripts/serve.mjs",
+    "dev:api": "wrangler dev --config api/wrangler.toml",
+    "deploy:api": "wrangler deploy --config api/wrangler.toml"
+  },
+  "keywords": [
+    "youtube",
+    "trending",
+    "cloudflare-pages",
+    "cloudflare-workers"
+  ],
+  "license": "UNLICENSED"
+}

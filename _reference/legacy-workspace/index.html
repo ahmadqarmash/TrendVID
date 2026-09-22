@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TrendVid – Trending Videos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Trending and most viewed YouTube videos worldwide." />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <h1>TrendVid</h1>
+  <div class="filters">
+    <select id="countrySelect"></select>
+    <select id="categorySelect"></select>
+    <button id="langToggle">EN</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-type="trending">Trending</button>
+  <button class="tab" data-type="mostViewed">Most Viewed</button>
+</nav>
+
+<main>
+  <div id="videos" class="grid"></div>
+</main>
+
+<footer>
+  <a href="#">About</a> |
+  <a href="#">Privacy</a> |
+  <a href="#">Terms</a> |
+  <a href="mailto:ahmadgam249@gmail.com">Contact</a>
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>

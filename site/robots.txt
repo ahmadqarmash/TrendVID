@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Never crawl API endpoints or the harvest folder
+Disallow: /api/
+
+# Let crawlers see the real pages
+Sitemap: https://trendvid.net/sitemap.xml

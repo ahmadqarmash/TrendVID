@@ -1,0 +1,3 @@
+# ads.txt - authorised digital sellers (required for AdSense demand).
+# Without this file buyers that only bid on authorised sellers skip your inventory.
+google.com, pub-7235869092973329, DIRECT, f08c47fec0942fa0

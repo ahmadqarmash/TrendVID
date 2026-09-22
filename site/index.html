@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Trending YouTube Videos | TrendVid</title>
+  <meta name="description" content="Discover trending and most viewed YouTube videos by country, category, and language on TrendVid. Updated frequently." />
+  <link rel="canonical" href="https://trendvid.net/" />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+
+  <meta property="og:site_name" content="TrendVid" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Trending YouTube Videos | TrendVid" />
+  <meta property="og:description" content="Explore trending and most viewed YouTube videos worldwide, organized by country and category." />
+  <meta property="og:url" content="https://trendvid.net/" />
+  <meta property="og:image" content="https://trendvid.net/assets/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Trending YouTube Videos | TrendVid" />
+  <meta name="twitter:description" content="Explore trending and most viewed YouTube videos worldwide, organized by country and category." />
+  <meta name="twitter:image" content="https://trendvid.net/assets/og.png" />
+
+  <!-- Impact.com affiliate verification (keep: required by the affiliate network) -->
+  <meta name="impact-site-verification" content="0de35687-ed81-46f4-8940-5bd4102e4b75" />
+
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="preconnect" href="https://api.trendvid.net" crossorigin />
+  <link rel="preconnect" href="https://i.ytimg.com" />
+  <link rel="preconnect" href="https://www.youtube.com" />
+  <link rel="stylesheet" href="/assets/css/style.css" />
+
+  <!-- Google AdSense (client) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7235869092973329"
+     crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <a class="skipLink" href="#grid">Skip to content</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <a class="brandLink" href="/"><span class="brandText">TrendVid</span></a>
+    </div>
+
+    <div class="controls">
+      <div class="control">
+        <label id="lblCountry" for="countrySelect">Country</label>
+        <select id="countrySelect" class="select" aria-label="Country"></select>
+      </div>
+
+      <div class="control">
+        <label id="lblCategory" for="categorySelect">Category</label>
+        <select id="categorySelect" class="select" aria-label="Category"></select>
+      </div>
+
+      <div class="control">
+        <label id="lblLang" for="langSelect">Language</label>
+        <select id="langSelect" class="select" aria-label="Language">
+          <option value="en">English</option>
+          <option value="ar">العربية</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="rightControls">
+      <div class="segmented" role="tablist" aria-label="Video mode">
+        <button id="btnTrending" class="segBtn active" type="button" role="tab" aria-selected="true">Trending</button>
+        <button id="btnViews" class="segBtn" type="button" role="tab" aria-selected="false">Most Viewed</button>
+      </div>
+
+      <button id="themeToggle" class="iconBtn" type="button" title="Toggle theme" aria-label="Toggle theme">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <p id="heroText" class="hero-text"></p>
+      <button id="heroCTA" class="hero-cta" type="button"></button>
+    </section>
+
+    <!-- Server-rendered (visible) SEO text: real H1 + copy, no JS needed -->
+    <section id="seoText" class="seo-text">
+      <h1 id="seoTitle">Trending YouTube Videos</h1>
+      <p id="seoDescription">
+        TrendVid helps you discover trending and most viewed YouTube videos by country, category and language.
+        Choose a country and a category above, then press play to watch any video right here. Videos are
+        refreshed regularly and embedded directly from YouTube; all content remains the property of its owners.
+      </p>
+    </section>
+
+    <div class="metaRow">
+      <div id="statusText" class="status" role="status" aria-live="polite">Loading…</div>
+
+      <div class="pagerMini">
+        <button id="btnPrev" class="btn" type="button" disabled>Previous</button>
+        <div id="pageIndicator" class="pageIndicator">1</div>
+        <button id="btnNext" class="btn" type="button" disabled>Next</button>
+      </div>
+    </div>
+
+    <!-- First grid holds `inFeedAfter` cards, then an ad, then the rest (in-feed placement) -->
+    <section id="grid" class="grid" aria-busy="false"></section>
+
+    <section class="adWrap" id="adInFeed" hidden>
+      <div class="adLabel">Advertisement</div>
+      <div class="adBox">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-7235869092973329"
+             data-ad-slot="4003830709"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+      </div>
+    </section>
+
+    <section id="gridRest" class="grid"></section>
+
+    <section class="adWrap" id="adBottom1" hidden>
+      <div class="adLabel">Advertisement</div>
+      <div class="adBox">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-7235869092973329"
+             data-ad-slot="4003830709"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+      </div>
+    </section>
+
+    <section class="adWrap" id="adBottom2" hidden>
+      <div class="adLabel">Advertisement</div>
+      <div class="adBox">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-7235869092973329"
+             data-ad-slot="4003830709"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+      </div>
+    </section>
+  </main>
+
+  <!-- Smart Offer Banner (geo-aware, hidden until a real tagged affiliate link exists) -->
+  <div id="smart-offer" class="smart-offer" hidden>
+    <a id="offer-link" href="#" target="_blank" rel="nofollow sponsored noopener">
+      <span id="offer-text"></span>
+      <span id="offer-btn" class="offerBtn"></span>
+    </a>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="/about.html" id="lnkAbout">About</a>
+      <a href="/privacy.html" id="lnkPrivacy">Privacy</a>
+      <a href="/terms.html" id="lnkTerms">Terms</a>
+      <a href="/contact.html" id="lnkContact">Contact</a>
+    </div>
+
+    <div class="footer-disclaimer">
+      All videos are embedded from YouTube and remain the property of their respective owners.
+      <span class="copyright">© <span id="year"></span> TrendVid</span>
+    </div>
+  </footer>
+
+  <!-- Video Modal -->
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modalOverlay" id="modalOverlay"></div>
+    <div class="modalCard" role="dialog" aria-modal="true" aria-label="Video player">
+      <button id="modalClose" class="modalClose" type="button" aria-label="Close">×</button>
+      <div class="modalPlayer">
+        <iframe id="playerFrame" src="" title="YouTube video player"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen></iframe>
+      </div>
+      <div class="modalMeta">
+        <div id="modalTitle" class="modalTitle"></div>
+        <div id="modalSub" class="modalSub"></div>
+        <a id="modalWatch" class="modalWatch" href="#" target="_blank" rel="noopener">Watch on YouTube</a>
+      </div>
+    </div>
+  </div>
+
+  <script id="schema-json" type="application/ld+json">{}</script>
+  <script type="module" src="/assets/js/app.js"></script>
+</body>
+</html>

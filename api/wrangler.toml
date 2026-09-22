@@ -1,0 +1,37 @@
+# TrendVid API - Cloudflare Worker
+name = "trendvid-api"
+main = "src/index.js"
+compatibility_date = "2025-12-07"
+
+# Deploy on the workers.dev subdomain as well (useful for testing) and, once you add a
+# custom domain in the dashboard, api.trendvid.net serves the same Worker.
+workers_dev = true
+
+# ---------------------------------------------------------------- KV cache (optional)
+# The Worker runs fine (uncached) without KV, but caching keeps YouTube quota usage low
+# and makes responses fast. Create the namespace once:
+#   npx wrangler kv namespace create TRENDING
+# then paste the id below and uncomment.
+# kv_namespaces = [
+#   { binding = "TRENDING", id = "REPLACE_WITH_KV_NAMESPACE_ID" }
+# ]
+
+[vars]
+# Which origins may call this API. `*` inside a host is supported (preview deployments).
+ALLOWED_ORIGINS = "https://trendvid.net,https://www.trendvid.net,https://*.pages.dev,http://localhost:8788,http://127.0.0.1:8788,http://localhost:3000,http://localhost:5173"
+# Regions sampled for country=GLOBAL, in priority order.
+REGIONS = "US,GB,DE,FR,ES,IT,TR,SA,AE,EG,JO,BR,MX,IN,ID,JP,KR,NG,PH,PK,ZA"
+GLOBAL_REGION_LIMIT = "12"
+# Fresh cache window, then a longer stale window used if YouTube fails (stale-while-error).
+CACHE_TTL = "600"
+CACHE_STALE_TTL = "86400"
+# "chart" = YouTube mostPopular chart (1 quota unit). "search" = order=viewCount (100 units).
+MOST_VIEWED_SOURCE = "chart"
+DEFAULT_COUNTRY = "GLOBAL"
+
+# ------------------------------------------------------------------------- secret
+# NEVER commit the key. Set it once per environment:
+#   npx wrangler secret put YOUTUBE_API_KEY
+#
+# Local development (.dev.vars is gitignored):
+#   YOUTUBE_API_KEY=your-key-here

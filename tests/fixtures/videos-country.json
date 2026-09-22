@@ -1,0 +1,83 @@
+{
+  "mode": "COUNTRY",
+  "country": "US",
+  "type": "trending",
+  "category": "10",
+  "nextPageToken": "CBQQAA",
+  "prevPageToken": "",
+  "items": [
+    {
+      "id": "Tk9TM7-eTmw",
+      "title": "Falling In Reverse - \"Joseph\" (feat. Corey Taylor and Serj Tankian)",
+      "channelTitle": "Epitaph Records",
+      "publishedAt": "2026-09-14T17:00:05Z",
+      "thumbnails": {
+        "default": {
+          "url": "https://i.ytimg.com/vi/Tk9TM7-eTmw/default.jpg",
+          "width": 120,
+          "height": 90
+        },
+        "medium": {
+          "url": "https://i.ytimg.com/vi/Tk9TM7-eTmw/mqdefault.jpg",
+          "width": 320,
+          "height": 180
+        },
+        "high": {
+          "url": "https://i.ytimg.com/vi/Tk9TM7-eTmw/hqdefault.jpg",
+          "width": 480,
+          "height": 360
+        },
+        "standard": {
+          "url": "https://i.ytimg.com/vi/Tk9TM7-eTmw/sddefault.jpg",
+          "width": 640,
+          "height": 480
+        },
+        "maxres": {
+          "url": "https://i.ytimg.com/vi/Tk9TM7-eTmw/maxresdefault.jpg",
+          "width": 1280,
+          "height": 720
+        },
+        "fhd": {
+          "url": "https://i.ytimg.com/vi/Tk9TM7-eTmw/fhddefault.jpg",
+          "width": 1920,
+          "height": 1080
+        }
+      },
+      "viewCount": "14943131"
+    },
+    {
+      "id": "ZJXLJLMSc00",
+      "title": "Sin Ti",
+      "channelTitle": "LOS DOS DE TAMAULIPAS - Topic",
+      "publishedAt": "2026-09-17T10:02:01Z",
+      "thumbnails": {
+        "default": {
+          "url": "https://i.ytimg.com/vi/ZJXLJLMSc00/default.jpg",
+          "width": 120,
+          "height": 90
+        },
+        "medium": {
+          "url": "https://i.ytimg.com/vi/ZJXLJLMSc00/mqdefault.jpg",
+          "width": 320,
+          "height": 180
+        },
+        "high": {
+          "url": "https://i.ytimg.com/vi/ZJXLJLMSc00/hqdefault.jpg",
+          "width": 480,
+          "height": 360
+        },
+        "standard": {
+          "url": "https://i.ytimg.com/vi/ZJXLJLMSc00/sddefault.jpg",
+          "width": 640,
+          "height": 480
+        },
+        "maxres": {
+          "url": "https://i.ytimg.com/vi/ZJXLJLMSc00/maxresdefault.jpg",
+          "width": 1280,
+          "height": 720
+        }
+      },
+      "viewCount": "2410097"
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About TrendVid | How We Show Trending YouTube Videos</title>
+  <meta name="description" content="TrendVid is an independent directory of trending and most-viewed YouTube videos by country and category. Learn how it works, where the data comes from, and what we do not do." />
+  <link rel="canonical" href="https://trendvid.net/about.html" />
+  <meta name="robots" content="index,follow" />
+  <meta property="og:site_name" content="TrendVid" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="About TrendVid" />
+  <meta property="og:description" content="How TrendVid collects, shows and monetises trending YouTube videos." />
+  <meta property="og:url" content="https://trendvid.net/about.html" />
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="preconnect" href="https://api.trendvid.net" crossorigin />
+  <link rel="stylesheet" href="/assets/css/style.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7235869092973329"
+     crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <a class="brandLink" href="/"><span class="brandText">TrendVid</span></a>
+    </div>
+    <div class="rightControls">
+      <a class="btn" href="/">Home</a>
+    </div>
+  </header>
+
+  <main class="docWrap">
+    <h1>About TrendVid</h1>
+    <p class="updated">Last updated: 23 September 2026</p>
+
+    <div class="langBlock" lang="en" dir="ltr">
+      <p>
+        TrendVid is an independent, ad-supported directory of what is popular on YouTube right now. Instead of
+        scrolling an endless feed, you pick a country and a category and immediately see the videos that are
+        actually charting in that market — the same lists that YouTube maintains internally as its
+        &ldquo;most popular&rdquo; charts.
+      </p>
+
+      <h2>How it works</h2>
+      <ul>
+        <li>We query the YouTube Data API for the most popular videos for a given region and video category.</li>
+        <li>Results are cached on our own Cloudflare Worker so pages load quickly and we stay inside API quotas.</li>
+        <li>For the <em>Global</em> view we sample several countries, then rank a video higher when it charts in
+          more than one of them — a simple, transparent way to measure worldwide momentum.</li>
+        <li>Every video plays inside an embedded YouTube player. The video file itself is never copied,
+          re-uploaded or re-hosted by us.</li>
+      </ul>
+
+      <h2>What we do not do</h2>
+      <ul>
+        <li>We do not host, download or re-encode any video.</li>
+        <li>We do not claim ownership of any video, thumbnail, title, channel name or trademark.</li>
+        <li>We do not sell viewer data. There is no account system and no newsletter requiring personal details.</li>
+        <li>We do not accept paid placements that hide the fact that something is an advertisement.</li>
+      </ul>
+
+      <h2>How TrendVid is funded</h2>
+      <p>
+        The site is free to use and funded by advertising (Google AdSense) plus occasional clearly-labelled
+        partner links. Ads keep the service running and pay for the API and infrastructure costs. Sponsored
+        links always carry a visible label, and they never influence which videos appear in a chart.
+      </p>
+
+      <h2>Independence and accuracy</h2>
+      <p>
+        TrendVid is not affiliated with, endorsed by or sponsored by YouTube or Google. Rankings reflect the
+        YouTube charts at the moment we fetched them and update continuously; view counts are approximate and
+        are shown in a compact form (for example <em>53.7K</em>) for readability.
+      </p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="/about.html">About</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+    <div class="footer-disclaimer">
+      All videos are embedded from YouTube and remain the property of their respective owners.
+      <span class="copyright">© <span id="year"></span> TrendVid</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/assets/js/static-page.js"></script>
+</body>
+</html>

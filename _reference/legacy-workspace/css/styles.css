@@ -1,0 +1,13 @@
+body{margin:0;background:#0f0f0f;color:#fff;font-family:Arial}
+.topbar{display:flex;justify-content:space-between;padding:16px}
+.filters select,.filters button{margin-left:8px}
+.tabs{text-align:center;margin:10px}
+.tab{background:none;color:#aaa;border:none;font-size:16px;margin:0 10px;cursor:pointer}
+.tab.active{color:#fff;border-bottom:2px solid red}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:20px}
+.card{background:#111;border-radius:12px;padding:10px}
+.thumb{position:relative;cursor:pointer}
+.thumb img{width:100%;border-radius:10px}
+.play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:48px;background:rgba(0,0,0,.4)}
+.meta{font-size:13px;color:#ccc;margin-top:6px}
+footer{text-align:center;padding:20px;color:#888}

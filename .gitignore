@@ -1,0 +1,39 @@
+# --- dependencies ---
+node_modules/
+package-lock.json.bak
+
+# --- Cloudflare / Wrangler local state + secrets ---
+.wrangler/
+.dev.vars
+.dev.vars.*
+api/.dev.vars
+api/.dev.vars.*
+.env
+.env.*
+!.env.example
+
+# --- build / cache output ---
+dist/
+.build/
+.cache/
+*.log
+npm-debug.log*
+
+# --- editors / OS ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# --- local scratch (never commit harvests of live data) ---
+_reference/api-samples/
+*.local.json
+
+# --- secrets guard: never commit keys ---
+*secret*
+*credentials*
+!docs/*secret*
+!docs/*credentials*
