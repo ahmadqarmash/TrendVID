@@ -4,7 +4,7 @@
 existing API Worker were never touched — nothing is broken by waiting, and there is no half-finished
 state anywhere remote.
 
-- **Resume point:** commit `781cfa1` on branch `main` (tagged `v3.0.0`).
+- **Resume point:** commit `26aacc0` on branch `main`, tagged **`v3.0.0`**.
 - **Last verified:** 2026-09-23 on this machine (see evidence below).
 
 ## Verified state (evidence)
@@ -85,8 +85,11 @@ with `git clone trendvid-backup-<date>.bundle trendvid` and everything (includin
 
 ## Backups created
 
-- `D:\trendvid-backup-<date>.bundle` — full git history in one file (`git clone <file>` restores it).
-- `D:\trendvid-backup-<date>.zip` — plain copy of the working tree for non-git restore.
+- `D:\trendvid-backup-2026-09-23.bundle` — full git history in one file; restore with
+  `git clone D:\trendvid-backup-2026-09-23.bundle trendvid-restored`
+- `D:\trendvid-backup-2026-09-23.zip` — plain copy of the working tree for non-git restore.
+
+Both were re-created after the final commit and verified (`git bundle verify`).
 
 ## Live production note
 
