@@ -86,7 +86,7 @@ instead of a hunt through eight files.
 - **API robustness**: invalid parameters return 400 with a JSON error instead of 500; categories
   degrade to a static list; an expired cache entry is still served when YouTube fails.
 
-## Before you announce anything — 5 open items
+## Before you announce anything — 4 open items
 
 1. **Paste your real affiliate link** into `site/assets/js/config.js` (`offers.items.veed.url`). The
    banner is intentionally hidden until you do, so no clicks are given away untagged.
@@ -94,9 +94,10 @@ instead of a hunt through eight files.
    `analytics.consentMode: true` — see `docs/MONETIZATION.md`.
 3. **Confirm `ALLOWED_ORIGINS`** in `api/wrangler.toml` after the first deploy (production, preview
    hostname, localhost).
-4. **Add `site/assets/og.png`** (1200×630). The OG/Twitter tags already reference it.
-5. **Add `X-Robots-Tag: noindex` to the Pages preview hostname** (Cloudflare Configuration Rule) so
+4. **Add `X-Robots-Tag: noindex` to the Pages preview hostname** (Cloudflare Configuration Rule) so
    staging copies can never be indexed as duplicates.
+
+`site/assets/og.png` (1200×630) is already generated, so the OG/Twitter tags resolve.
 
 ## Docs
 
