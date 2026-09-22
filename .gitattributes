@@ -1,0 +1,11 @@
+# Normalise line endings so Windows checkouts and the Linux build/deploy agree.
+* text=auto eol=lf
+
+# Keep captured reference material and fixtures byte-exact.
+_reference/** -text
+tests/fixtures/*.json -text
+
+# Binary assets
+*.png binary
+*.ico binary
+*.jpg binary
