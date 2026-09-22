@@ -32,7 +32,7 @@ _reference/               -> harvested live build + API samples (not deployed; k
 
 ```bash
 npm run check     # syntax-check every JS file
-npm test          # 41 offline tests (unit + fixtures); no network needed
+npm test          # 55 offline tests (unit, fixtures, HTML/JS wiring); no network needed
 npm run serve     # http://localhost:8788  (serves site/)
 npm run dev:api   # wrangler dev -> http://localhost:8787 (needs the YOUTUBE_API_KEY secret)
 

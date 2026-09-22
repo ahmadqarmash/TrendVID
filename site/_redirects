@@ -5,6 +5,5 @@
 /css/styles.css          /assets/css/style.css        301
 /js/app.js               /assets/js/app.js            301
 /privacy-policy.html     /privacy.html                301
-/contact.html            /contact.html                200
 
 # --- www -> apex is handled by Cloudflare (the live site 301s www already) ---
