@@ -8,13 +8,11 @@ compatibility_date = "2025-12-07"
 workers_dev = true
 
 # ---------------------------------------------------------------- KV cache (optional)
-# The Worker runs fine (uncached) without KV, but caching keeps YouTube quota usage low
-# and makes responses fast. Create the namespace once:
-#   npx wrangler kv namespace create TRENDING
-# then paste the id below and uncomment.
-# kv_namespaces = [
-#   { binding = "TRENDING", id = "REPLACE_WITH_KV_NAMESPACE_ID" }
-# ]
+# KV cache — namespace created 2026-09-23 (title "TRENDING"). The Worker also runs
+# uncached without it, but caching keeps YouTube quota usage low and responses fast.
+kv_namespaces = [
+  { binding = "TRENDING", id = "a51b451fc7e14008a3abb0a6aeab2578" }
+]
 
 [vars]
 # Which origins may call this API. `*` inside a host is supported (preview deployments).
