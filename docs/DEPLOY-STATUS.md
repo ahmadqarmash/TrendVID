@@ -36,7 +36,8 @@ npx wrangler pages deploy site --project-name trendvid --branch main     # site
 | Syntax | `npm run check` | 20/20 files parse cleanly |
 | Offline tests | `npm test` | 55 passed, 0 failed (5 live tests skipped) |
 | Live API contract | `TRENDVID_LIVE=1 node --test tests/live-contract.test.mjs` | 5/5 passed (against old prod API) |
-| Worker `/diag` | `curl https://trendvid-api.trendvids.workers.dev/diag` | `ok:true`, `kvCache:true`, **`youtubeKey:false`**, TTLs 600/86400 |
+| Worker `/diag` | `curl https://trendvid-api.trendvids.workers.dev/diag` | `ok:true`, `kvCache:true`, **`youtubeKey:true`** (secret added via dashboard 2026-09-23), TTLs 600/86400 |
+| Live data | `curl .../videos?country=US` | 200, **20 real YouTube items** returned end-to-end |
 | Bad params | `curl .../videos?type=bogus&country=XX&category=999` | 400 + JSON error (old API returned 500) |
 | Categories w/o key | `curl .../categories` | 200, `source:"fallback", degraded:true` (designed degradation) |
 | CORS | preflight from `https://trendvid-82q.pages.dev` | 204, `Access-Control-Allow-Origin` echoed (wildcard pattern works) |
@@ -44,16 +45,18 @@ npx wrangler pages deploy site --project-name trendvid --branch main     # site
 | Pretty URLs | `/about.html` etc. | **308 → `/about`** (Pages canonicalises `.html`), final 200 |
 | Secret scan | CI guard / local grep | 0 API keys committed; no `AIza…` key anywhere on disk |
 
-## What still blocks a fully working preview grid
+## Preview notes — key blocker RESOLVED (2026-09-23)
+
+> ✅ `YOUTUBE_API_KEY` set via dashboard (encrypted); `/diag` → `youtubeKey:true`;
+> `/videos?country=US` returns 20 live YouTube items. One note remains:
 
 | Blocker | Detail | Fix |
 | --- | --- | --- |
-| **`YOUTUBE_API_KEY` missing** | never recovered; `/diag` reports `youtubeKey:false`, so `/videos` errors and the grid shows the `api_error` state (by design) | **owner runs in a terminal:** `npx wrangler secret put YOUTUBE_API_KEY --config api/wrangler.toml`, then paste the key (never in chat, never commit it). Or create a fresh key in Google Cloud Console. |
 | **Preview defaults to the OLD API** | `config.js` `apiBase` is `https://api.trendvid.net`; measured: the old API only allows origin `https://trendvid.net` (no `*.pages.dev`), so the preview gets CORS-blocked there | on the preview origin run `localStorage.setItem('trendvid_api_base','https://trendvid-api.trendvids.workers.dev')` and reload. The shipped CSP is report-only, so it reports but does not block (add the workers.dev host to `connect-src` in `site/_headers` if you want zero CSP reports). |
 
 ## Open items (owner-only; cannot be done by an assistant)
 
-1. **`YOUTUBE_API_KEY`** — `wrangler secret put` (above); the only thing separating the preview from a full grid.
+1. **`YOUTUBE_API_KEY`** ✅ done (dashboard, 2026-09-23) — `/diag` reports `youtubeKey:true`.
 2. **Affiliate link** — paste your Impact/VEED tracking link into `site/assets/js/config.js`
    (`offers.items.veed.url`). Until then the banner stays hidden by design, so no untagged clicks leak.
 3. **Consent (CMP)** — AdSense → *Privacy & messaging* → publish the GDPR message, then set
@@ -91,11 +94,12 @@ npx wrangler pages deploy site --project-name trendvid --branch main     # site
    `main` deploy the site and PRs get preview URLs. Until then, site updates go through
    `npx wrangler pages deploy site --project-name trendvid --branch main`.
 2. The two Actions secrets above.
-3. `YOUTUBE_API_KEY` (see blockers) + the other open items.
+3. The remaining open items (affiliate link, CMP consent, noindex rule, `.html` canonical decision).
 
 ## Cutover (only after the preview is approved)
 
-1. Set the `YOUTUBE_API_KEY` secret; confirm `/diag` → `youtubeKey:true` and the preview grid fills.
+1. ~~Set the `YOUTUBE_API_KEY` secret~~ ✅ done; confirm the preview grid fills after the
+   localStorage override (see "Preview notes" above).
 2. Workers → `trendvid-api` → *Domains & Routes → Add custom domain* → `api.trendvid.net`; verify
    `curl https://api.trendvid.net/diag`.
 3. Pages → `trendvid` → *Custom domains* → `trendvid.net` (`www` keeps its 301 to the apex).
