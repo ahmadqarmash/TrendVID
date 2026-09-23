@@ -4,7 +4,9 @@
 Cloudflare under preview hostnames and the full history is on GitHub. Your live site (`trendvid.net`)
 and the existing API (`api.trendvid.net`) were never touched — production still serves the old build.
 
-- **Resume point:** tip of `main`, pushed to `origin/main` (pre-deploy snapshot remains tag `v3.0.0`).
+- **Resume point:** tip of `main`, pushed to `origin/main`. Tags: `v3.0.0` = pre-deploy snapshot;
+  `v3.1.0` = fully deployed state (Cloudflare account `fae79810…`, YouTube key live, GitHub pushed,
+  old account cleaned).
 - **Last verified:** 2026-09-23 on this machine, after deploy (evidence below).
 
 ## Deployed endpoints (2026-09-23)
@@ -111,4 +113,4 @@ npx wrangler pages deploy site --project-name trendvid --branch main     # site
   `git clone D:\trendvid-backup-2026-09-23.bundle trendvid-restored`
 - `D:\trendvid-backup-2026-09-23.zip` — plain copy of the working tree for non-git restore.
 
-Both were re-created after the `v3.0.0` commit and verified (`git bundle verify`).
+Both were re-created after the `v3.1.0` commit (latest state) and verified (`git bundle verify`).
