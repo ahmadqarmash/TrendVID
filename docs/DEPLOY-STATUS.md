@@ -1,10 +1,10 @@
 # Deploy status & resume notes
 
-**Status: ROUTE A DEPLOYED (preview), NOT cut over.** The rebuild now runs on Cloudflare under
-preview hostnames. Your live site (`trendvid.net`) and the existing API (`api.trendvid.net`) were
-never touched — production still serves the old build; nothing remote is half-finished.
+**Status: ROUTES A + B DONE (preview live, repo pushed) — NOT cut over.** The rebuild runs on
+Cloudflare under preview hostnames and the full history is on GitHub. Your live site (`trendvid.net`)
+and the existing API (`api.trendvid.net`) were never touched — production still serves the old build.
 
-- **Resume point:** the commit that lands this file (the pre-deploy snapshot remains tag `v3.0.0`).
+- **Resume point:** tip of `main`, pushed to `origin/main` (pre-deploy snapshot remains tag `v3.0.0`).
 - **Last verified:** 2026-09-23 on this machine, after deploy (evidence below).
 
 ## Deployed endpoints (2026-09-23)
@@ -60,19 +60,32 @@ npx wrangler pages deploy site --project-name trendvid --branch main     # site
    `<link rel=canonical>` use `.html` (matching the old build). Decide before attaching `trendvid.net`:
    switch canonicals + `sitemap.xml` to extensionless URLs (recommended) or accept the one-hop chain.
 
-## Route B — GitHub (NOT done: no remote, `gh` not installed)
+## Route B — GitHub: DONE (2026-09-23)
 
-```bash
-# install gh first:  winget install GitHub.cli   then  gh auth login   (or use an existing repo URL)
-git config user.name  "Your Name"                 # replace the placeholder identity before pushing
-git config user.email "you@example.com"
-git remote add origin https://github.com/<you>/trendvid.git
-git push -u origin main
-```
+- Remote: `origin` → `https://github.com/ahmadqarmash/TrendVID.git` (public, default branch `main`).
+- Identity: `ahmadqarmash <ahmadgam249@gmail.com>` (repo-local git config).
+- Auth: GitHub CLI device flow → `gh` (installed `C:\Program Files\GitHub CLI`) logged in as
+  **ahmadqarmash**, scopes `repo,workflow,gist,read:org`. The stored Git Credential Manager
+  credential (OLD account `ahmadqar`) is neutralised **for this repo only** by repo-local config:
+  `credential.helper` = `""` (reset) then `!gh auth git-credential` — on both the generic and
+  `credential.https://github.com.helper` keys. Plain `git push` uses the new account.
+- Pushed: `main` = tip commit + tag `v3.0.0`; branch tracks `origin/main`.
 
-Then: Cloudflare → Workers & Pages → `trendvid` → *Settings → Build & deployments → Connect to Git*
-to switch the Pages project from direct uploads to the Git integration (build output directory `site`,
-no build command). Pushes to `main` deploy; PRs get preview URLs.
+### GitHub Actions after the first push
+
+| Workflow | Result | Note |
+| --- | --- | --- |
+| `CI` | ✅ success | secret scan + `npm run check` + `npm test` green on the runner |
+| `Deploy API Worker` | ❌ failed (expected) | `wrangler deploy` aborted: `CLOUDFLARE_API_TOKEN` not set. **Owner step:** dashboard → *My Profile → Tokens* (or Workers API token) create a token with Workers Edit + Account Read → repo **Settings → Secrets and variables → Actions** → add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (`ec0ce1943f313c84cfdd06226d5f003c`) → re-run the job. Only triggers on `api/**` changes. |
+
+### Still to do (owner, dashboard)
+
+1. Workers & Pages → `trendvid` → *Settings → Build & deployments → Connect to Git* → repo
+   `ahmadqarmash/TrendVID` (build output directory `site`, no build command). After that, pushes to
+   `main` deploy the site and PRs get preview URLs. Until then, site updates go through
+   `npx wrangler pages deploy site --project-name trendvid --branch main`.
+2. The two Actions secrets above.
+3. `YOUTUBE_API_KEY` (see blockers) + the other open items.
 
 ## Cutover (only after the preview is approved)
 
