@@ -16,11 +16,10 @@ and the existing API (`api.trendvid.net`) were never touched — production stil
 | API (Worker `trendvid-api`) | `https://trendvid-api.trendvids.workers.dev` | version `65262469-65b0-4731-b88b-c42515684348` |
 | KV namespace `TRENDING` | `de49c8930de6453aab9608117a1ee26d` | bound in `api/wrangler.toml` |
 
-> ⚠️ **Leftovers on the WRONG (old) account** `ec0ce1943f313c84cfdd06226d5f003c`
-> (`vstudio24@outlook.com`, no longer authenticated): Pages project `trendvid` →
-> `trendvid-ap3.pages.dev`, Worker `trendvid-api` → `trendvid-api.vstudio24.workers.dev`,
-> KV `a51b451f…`. Harmless, but delete them from that dashboard when convenient so nobody
-> confuses the two deployments. **Everything above this line is the real deployment.**
+> ✅ **Old-account cleanup done (2026-09-23):** the stray Pages project, Worker and KV were deleted
+> from the wrong account `ec0ce1943f313c84cfdd06226d5f003c` (`vstudio24@outlook.com`) — verified:
+> old Worker → 404, old preview hostname → no DNS. Account `fae798109874b9f3ad50d23d15ad51d0`
+> is the **only** home of TrendVid now.
 
 Redeploy (both non-interactive):
 
