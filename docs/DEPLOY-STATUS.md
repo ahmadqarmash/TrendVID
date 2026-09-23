@@ -11,10 +11,16 @@ and the existing API (`api.trendvid.net`) were never touched — production stil
 
 | Piece | URL / ID | Notes |
 | --- | --- | --- |
-| Site (Pages project `trendvid`) | `https://trendvid-ap3.pages.dev` | deployment `44b5476c`, branch `main`, 21 files |
-| API (Worker `trendvid-api`) | `https://trendvid-api.vstudio24.workers.dev` | version `06848d73-8dd8-4b9d-aa39-244b552dd7ac` |
-| KV namespace `TRENDING` | `a51b451fc7e14008a3abb0a6aeab2578` | bound in `api/wrangler.toml` |
-| Cloudflare account | `ec0ce1943f313c84cfdd06226d5f003c` | wrangler logged in as `vstudio24@outlook.com` |
+| Cloudflare account | `fae798109874b9f3ad50d23d15ad51d0` | "Ahmadgam249@gmail.com's Account"; wrangler logged in as `ahmadgam249@gmail.com`; pinned via `account_id` in `api/wrangler.toml` |
+| Site (Pages project `trendvid`) | `https://trendvid-82q.pages.dev` | deployment `39f6f2cd`, branch `main`, 21 files + `_headers`/`_redirects` |
+| API (Worker `trendvid-api`) | `https://trendvid-api.trendvids.workers.dev` | version `65262469-65b0-4731-b88b-c42515684348` |
+| KV namespace `TRENDING` | `de49c8930de6453aab9608117a1ee26d` | bound in `api/wrangler.toml` |
+
+> ⚠️ **Leftovers on the WRONG (old) account** `ec0ce1943f313c84cfdd06226d5f003c`
+> (`vstudio24@outlook.com`, no longer authenticated): Pages project `trendvid` →
+> `trendvid-ap3.pages.dev`, Worker `trendvid-api` → `trendvid-api.vstudio24.workers.dev`,
+> KV `a51b451f…`. Harmless, but delete them from that dashboard when convenient so nobody
+> confuses the two deployments. **Everything above this line is the real deployment.**
 
 Redeploy (both non-interactive):
 
@@ -30,10 +36,10 @@ npx wrangler pages deploy site --project-name trendvid --branch main     # site
 | Syntax | `npm run check` | 20/20 files parse cleanly |
 | Offline tests | `npm test` | 55 passed, 0 failed (5 live tests skipped) |
 | Live API contract | `TRENDVID_LIVE=1 node --test tests/live-contract.test.mjs` | 5/5 passed (against old prod API) |
-| Worker `/diag` | `curl https://trendvid-api.vstudio24.workers.dev/diag` | `ok:true`, `kvCache:true`, **`youtubeKey:false`**, TTLs 600/86400 |
+| Worker `/diag` | `curl https://trendvid-api.trendvids.workers.dev/diag` | `ok:true`, `kvCache:true`, **`youtubeKey:false`**, TTLs 600/86400 |
 | Bad params | `curl .../videos?type=bogus&country=XX&category=999` | 400 + JSON error (old API returned 500) |
 | Categories w/o key | `curl .../categories` | 200, `source:"fallback", degraded:true` (designed degradation) |
-| CORS | preflight from `https://trendvid-ap3.pages.dev` | 204, `Access-Control-Allow-Origin` echoed (wildcard pattern works) |
+| CORS | preflight from `https://trendvid-82q.pages.dev` | 204, `Access-Control-Allow-Origin` echoed (wildcard pattern works) |
 | Pages routes | `/`, robots/sitemap/ads.txt, assets | all 200; unknown path → 404 (`404.html`) |
 | Pretty URLs | `/about.html` etc. | **308 → `/about`** (Pages canonicalises `.html`), final 200 |
 | Secret scan | CI guard / local grep | 0 API keys committed; no `AIza…` key anywhere on disk |
@@ -43,7 +49,7 @@ npx wrangler pages deploy site --project-name trendvid --branch main     # site
 | Blocker | Detail | Fix |
 | --- | --- | --- |
 | **`YOUTUBE_API_KEY` missing** | never recovered; `/diag` reports `youtubeKey:false`, so `/videos` errors and the grid shows the `api_error` state (by design) | **owner runs in a terminal:** `npx wrangler secret put YOUTUBE_API_KEY --config api/wrangler.toml`, then paste the key (never in chat, never commit it). Or create a fresh key in Google Cloud Console. |
-| **Preview defaults to the OLD API** | `config.js` `apiBase` is `https://api.trendvid.net`; measured: the old API only allows origin `https://trendvid.net` (no `*.pages.dev`), so the preview gets CORS-blocked there | on the preview origin run `localStorage.setItem('trendvid_api_base','https://trendvid-api.vstudio24.workers.dev')` and reload. The shipped CSP is report-only, so it reports but does not block (add the workers.dev host to `connect-src` in `site/_headers` if you want zero CSP reports). |
+| **Preview defaults to the OLD API** | `config.js` `apiBase` is `https://api.trendvid.net`; measured: the old API only allows origin `https://trendvid.net` (no `*.pages.dev`), so the preview gets CORS-blocked there | on the preview origin run `localStorage.setItem('trendvid_api_base','https://trendvid-api.trendvids.workers.dev')` and reload. The shipped CSP is report-only, so it reports but does not block (add the workers.dev host to `connect-src` in `site/_headers` if you want zero CSP reports). |
 
 ## Open items (owner-only; cannot be done by an assistant)
 
@@ -55,7 +61,7 @@ npx wrangler pages deploy site --project-name trendvid --branch main     # site
 4. **`ALLOWED_ORIGINS`** — the shipped list covers production, `*.pages.dev` and localhost; confirm
    after the first custom-domain attach.
 5. **Preview noindex** — Cloudflare Configuration Rule adding `X-Robots-Tag: noindex` to
-   `trendvid-ap3.pages.dev` so staging is never indexed.
+   `trendvid-82q.pages.dev` so staging is never indexed.
 6. **`.html` canonical vs Pages pretty URLs** — Pages 308s `/about.html` → `/about`; the sitemap and
    `<link rel=canonical>` use `.html` (matching the old build). Decide before attaching `trendvid.net`:
    switch canonicals + `sitemap.xml` to extensionless URLs (recommended) or accept the one-hop chain.
@@ -76,7 +82,7 @@ npx wrangler pages deploy site --project-name trendvid --branch main     # site
 | Workflow | Result | Note |
 | --- | --- | --- |
 | `CI` | ✅ success | secret scan + `npm run check` + `npm test` green on the runner |
-| `Deploy API Worker` | ❌ failed (expected) | `wrangler deploy` aborted: `CLOUDFLARE_API_TOKEN` not set. **Owner step:** dashboard → *My Profile → Tokens* (or Workers API token) create a token with Workers Edit + Account Read → repo **Settings → Secrets and variables → Actions** → add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (`ec0ce1943f313c84cfdd06226d5f003c`) → re-run the job. Only triggers on `api/**` changes. |
+| `Deploy API Worker` | ❌ failed (expected) | `wrangler deploy` aborted: `CLOUDFLARE_API_TOKEN` not set. **Owner step:** dashboard → *My Profile → Tokens* (or Workers API token) create a token with Workers Edit + Account Read → repo **Settings → Secrets and variables → Actions** → add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (`fae798109874b9f3ad50d23d15ad51d0`) → re-run the job. Only triggers on `api/**` changes. |
 
 ### Still to do (owner, dashboard)
 
