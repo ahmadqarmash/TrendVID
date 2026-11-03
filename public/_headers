@@ -14,5 +14,6 @@
 
 # Fonts never change in place (a new font gets a new file name), so cache them for a year.
 /assets/fonts/*
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
   Access-Control-Allow-Origin: *
