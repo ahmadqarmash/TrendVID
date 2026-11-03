@@ -8,6 +8,12 @@ account_id = "fae798109874b9f3ad50d23d15ad51d0"
 
 workers_dev = true
 
+# Production domain. Previously served by the old Worker "trendvid-ui" (left in the account for
+# rollback: point this custom domain back at it). www.trendvid.net already 301s to the apex.
+routes = [
+  { pattern = "trendvid.net", custom_domain = true },
+]
+
 # Guides are Markdown files in content/; this turns them into src/generated/guides.js.
 [build]
 command = "node scripts/build-content.mjs"

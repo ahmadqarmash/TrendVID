@@ -41,8 +41,9 @@ AdSense approval and Google rankings need real content. Aim for 8–10 guides be
 
 ## 6. Go live on trendvid.net
 
-1. Cloudflare → Workers & Pages → `trendvid-site` → Settings → Domains & Routes → add
-   `trendvid.net` and `www.trendvid.net` as custom domains. This replaces the old site.
+1. ✅ Done 2026-11-04: `trendvid.net` is a custom domain of `trendvid-site` (set by `routes` in
+   `wrangler.toml`, applied on `wrangler deploy`). `www.trendvid.net` already 301s to the apex.
+   The old Worker `trendvid-ui` is kept for rollback.
 2. Check `https://trendvid.net/robots.txt` shows `Allow: /` and the sitemap line.
 3. Google Search Console: submit `https://trendvid.net/sitemap.xml`.
    Cloudflare → trendvid.net → Security → WAF → Custom rules: add `ip.src.country eq "IL"` → Block,

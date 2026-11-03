@@ -5,8 +5,10 @@ Saved 2026-11-03. Trending pages (including the home page) can never carry ads o
 
 ## Where we stopped
 
-- Branch `v4` (PR #1, not merged) is deployed to the test address
-  https://trendvid-site.trendvids.workers.dev with live data. `trendvid.net` still serves the old site.
+- **Live since 2026-11-04:** `trendvid.net` is served by Worker `trendvid-site` (branch `v4`,
+  PR #1 not yet merged). Rollback: point the `trendvid.net` custom domain back at the old Worker
+  `trendvid-ui`, which is kept untouched (as is `api.trendvid.net` → `trendvids-api`).
+- Test address: https://trendvid-site.trendvids.workers.dev (noindex).
 - Confirmed: AdSense `pub-7235869092973329`, GA4 `G-28Y2VHF39E`, YouTube API key (Worker secret).
 - Launch steps: `docs/LAUNCH.md`.
 
