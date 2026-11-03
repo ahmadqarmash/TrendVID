@@ -1,0 +1,34 @@
+# TrendVid 4 - one Worker serves the whole site (HTML, static assets, trending data).
+name = "trendvid-site"
+main = "src/worker.js"
+compatibility_date = "2025-12-07"
+
+# TrendVid's own Cloudflare account (ahmadgam249@gmail.com). Never deploy anywhere else.
+account_id = "fae798109874b9f3ad50d23d15ad51d0"
+
+workers_dev = true
+
+# Guides are Markdown files in content/; this turns them into src/generated/guides.js.
+[build]
+command = "node scripts/build-content.mjs"
+
+# CSS, client JS, images, ads.txt. Requests that match a file never reach the Worker.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Trending snapshots. Same namespace as v3; v4 keys are prefixed "v4:".
+[[kv_namespaces]]
+binding = "TRENDING"
+id = "de49c8930de6453aab9608117a1ee26d"
+
+# Refresh every country's trending chart every 2 hours (about 12 quota units per country per day).
+[triggers]
+crons = ["17 */2 * * *"]
+
+[vars]
+SITE_URL = "https://trendvid.net"
+
+# ------------------------------------------------------------------------- secret
+# NEVER commit the key:  npx wrangler secret put YOUTUBE_API_KEY
+# Local development:     put YOUTUBE_API_KEY=... in .dev.vars (gitignored)

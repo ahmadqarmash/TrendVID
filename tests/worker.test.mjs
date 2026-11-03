@@ -1,243 +1,139 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { COUNTRIES, TRENDING } from '../src/config.js';
+import { refreshAll, trendKey } from '../src/lib/trending.js';
+import { preferredLang, sitemapXml } from '../src/worker.js';
+import worker from '../src/worker.js';
+import { fakeYouTube, get, memoryKV, ytItem } from './helpers.mjs';
 
-import worker, { intParam, matchOrigin, normalizeVideo, parseList } from '../api/src/index.js';
+test('root redirects by Accept-Language, Arabic by default', async () => {
+  assert.equal((await get('/')).res.headers.get('location'), '/ar/');
+  assert.equal((await get('/', { headers: { 'accept-language': 'en-GB,en;q=0.9' } })).res.headers.get('location'), '/en/');
+  assert.equal((await get('/', { headers: { 'accept-language': 'ar-SA,en;q=0.5' } })).res.headers.get('location'), '/ar/');
+  assert.equal(preferredLang('fr-FR'), 'ar');
+});
 
-const API = 'https://api.trendvid.net';
+test('canonical URL rules: trailing slash, lower case, legacy v3 paths', async () => {
+  assert.equal((await get('/en/tools')).res.headers.get('location'), '/en/tools/');
+  assert.equal((await get('/en/trending/SA/')).res.headers.get('location'), '/en/trending/sa/');
+  assert.equal((await get('/privacy-policy.html')).res.status, 301);
+  assert.equal((await get('/privacy-policy.html')).res.headers.get('location'), '/en/privacy/');
+});
 
-function makeEnv(overrides = {}) {
-  return {
-    YOUTUBE_API_KEY: 'test-key',
-    REGIONS: 'US,GB',
-    GLOBAL_REGION_LIMIT: '2',
-    CACHE_TTL: '600',
-    CACHE_STALE_TTL: '86400',
-    MOST_VIEWED_SOURCE: 'chart',
-    DEFAULT_COUNTRY: 'GLOBAL',
-    ...overrides,
-  };
-}
+test('every page renders with lang/dir, canonical and both hreflang alternates', async () => {
+  const pages = ['/ar/', '/en/tools/', '/ar/tools/earnings-calculator/', '/en/guides/', '/ar/trending/', '/en/about/'];
+  for (const path of pages) {
+    const { res, body } = await get(path);
+    assert.equal(res.status, 200, path);
+    const lang = path.split('/')[1];
+    assert.match(body, new RegExp(`<html lang="${lang}" dir="${lang === 'ar' ? 'rtl' : 'ltr'}">`), path);
+    assert.match(body, new RegExp(`<link rel="canonical" href="https://trendvid.net${path}">`), path);
+    assert.match(body, /hreflang="ar"/, path);
+    assert.match(body, /hreflang="en"/, path);
+    assert.equal((body.match(/<h1[ >]/g) || []).length, 1, `${path} must have exactly one h1`);
+  }
+});
 
-function ytVideo(id, region) {
-  return {
-    id,
-    snippet: {
-      title: `Video ${id} in ${region}`,
-      channelTitle: `Channel ${region}`,
-      publishedAt: '2026-09-20T10:00:00Z',
-      thumbnails: { high: { url: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`, width: 480, height: 360 } },
-    },
-    statistics: { viewCount: '12345' },
-  };
-}
+test('unknown pages, countries and categories are 404 + noindex', async () => {
+  for (const path of ['/zz/', '/ar/nope/', '/ar/tools/nope/', '/en/trending/xx/', '/en/trending/sa/nope/', '/ar/guides/nope/']) {
+    const { res, body } = await get(path);
+    assert.equal(res.status, 404, path);
+    assert.match(body, /noindex/, path);
+  }
+});
 
-/** Fake YouTube upstream. Every region returns 3 videos, one of which is shared. */
-function stubYouTube() {
-  const calls = [];
-  const original = globalThis.fetch;
-  globalThis.fetch = async (input) => {
-    const url = new URL(typeof input === 'string' ? input : input.url);
-    calls.push(url);
-    if (url.hostname !== 'www.googleapis.com') throw new Error(`unexpected host: ${url.hostname}`);
-    const region = url.searchParams.get('regionCode') || 'XX';
-    if (url.pathname.endsWith('/videos')) {
-      return Response.json({
-        items: [ytVideo(`${region}1`, region), ytVideo(`${region}2`, region), ytVideo('SHARED', region)],
-        nextPageToken: 'NEXT',
-        prevPageToken: 'PREV',
-      });
-    }
-    if (url.pathname.endsWith('/videoCategories')) {
-      return Response.json({
-        items: [{ id: '10', snippet: { title: 'Music' } }, { id: '20', snippet: { title: 'Gaming' } }],
-      });
-    }
-    if (url.pathname.endsWith('/search')) return Response.json({ items: [], nextPageToken: '' });
-    throw new Error(`unstubbed upstream call: ${url.pathname}`);
-  };
-  return { calls, restore: () => { globalThis.fetch = original; } };
-}
+test('non-production hosts are noindex and robots-blocked; production is open', async () => {
+  const preview = await get('/robots.txt', { host: 'https://trendvid-site.example.workers.dev' });
+  assert.match(preview.body, /Disallow: \//);
+  const page = await get('/ar/', { host: 'https://trendvid-site.example.workers.dev' });
+  assert.equal(page.res.headers.get('x-robots-tag'), 'noindex, nofollow');
 
-/** In-memory KV stub with the same surface the Worker uses. */
-function makeKv(seed = {}) {
-  const store = new Map(Object.entries(seed));
-  return {
-    store,
-    async get(key) { return store.has(key) ? store.get(key) : null; },
-    async put(key, value) { store.set(key, JSON.parse(value)); },
-  };
-}
+  const prod = await get('/robots.txt');
+  assert.match(prod.body, /Allow: \//);
+  assert.match(prod.body, /Sitemap: https:\/\/trendvid\.net\/sitemap\.xml/);
+  assert.equal((await get('/ar/')).res.headers.get('x-robots-tag'), null);
+});
 
-const call = (path, env, headers = {}) => worker.fetch(new Request(`${API}${path}`, { headers }), env, {});
+test('sitemap lists both languages for tools, countries and static pages', () => {
+  const xml = sitemapXml({ SITE_URL: 'https://trendvid.net' });
+  assert.match(xml, /<loc>https:\/\/trendvid\.net\/ar\/tools\/title-checker\/<\/loc>/);
+  assert.match(xml, /<loc>https:\/\/trendvid\.net\/en\/trending\/sa\/<\/loc>/);
+  assert.match(xml, /<loc>https:\/\/trendvid\.net\/en\/privacy\/<\/loc>/);
+  assert.ok(!xml.includes('/guides/'), 'no guides published yet, so no guide URLs');
+});
 
-test('country mode returns the verified contract shape', async (t) => {
-  const yt = stubYouTube();
-  t.after(yt.restore);
+test('HTML responses carry security headers', async () => {
+  const { res } = await get('/en/');
+  assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+  assert.match(res.headers.get('content-security-policy-report-only'), /frame-src https:\/\/www\.youtube-nocookie\.com/);
+  assert.equal(res.headers.get('content-type'), 'text/html; charset=utf-8');
+});
 
-  const res = await call('/videos?type=trending&country=US&category=10', makeEnv());
+test('trending page fetches from YouTube once, then serves from KV', async () => {
+  const kv = memoryKV();
+  const yt = fakeYouTube();
+  const env = { TRENDING: kv, YOUTUBE_API_KEY: 'k' };
+  await get('/en/trending/sa/', { env, fetchImpl: yt.fetchImpl });
+  await get('/ar/trending/sa/', { env, fetchImpl: yt.fetchImpl });
+  assert.equal(yt.calls.length, 1);
+  assert.equal(yt.calls[0].searchParams.get('regionCode'), 'SA');
+  assert.equal(yt.calls[0].searchParams.get('chart'), 'mostPopular');
+  assert.ok(kv.store.has(trendKey('SA')));
+  assert.equal(kv.puts[0].opts.expirationTtl, TRENDING.maxAgeSeconds);
+  assert.ok(TRENDING.maxAgeSeconds < 30 * 86400, 'YouTube allows at most 30 days of storage');
+});
+
+test('category pages request the YouTube category id', async () => {
+  const yt = fakeYouTube();
+  await get('/en/trending/eg/music/', { env: { TRENDING: memoryKV(), YOUTUBE_API_KEY: 'k' }, fetchImpl: yt.fetchImpl });
+  assert.equal(yt.calls[0].searchParams.get('videoCategoryId'), '10');
+});
+
+test('an expired snapshot is still shown (marked stale) when YouTube fails', async () => {
+  const old = { items: [{ id: 'old1', title: 'Old video', channelTitle: 'C', publishedAt: '', viewCount: '5', thumb: '' }], fetchedAt: Date.now() - 5 * 3600 * 1000 };
+  const kv = memoryKV({ [trendKey('JO')]: old });
+  const yt = fakeYouTube(() => ({ status: 403, body: { error: { message: 'quota', errors: [{ reason: 'quotaExceeded' }] } } }));
+  const { res, body } = await get('/en/trending/jo/', { env: { TRENDING: kv, YOUTUBE_API_KEY: 'k' }, fetchImpl: yt.fetchImpl });
   assert.equal(res.status, 200);
-  const body = await res.json();
-
-  assert.equal(body.mode, 'COUNTRY');
-  assert.equal(body.country, 'US');
-  assert.equal(body.type, 'trending');
-  assert.equal(body.category, '10');
-  assert.equal(body.nextPageToken, 'NEXT');
-  assert.equal(body.prevPageToken, 'PREV');
-  assert.equal(body.items.length, 3);
-
-  const item = body.items[0];
-  assert.deepEqual(Object.keys(item).sort(),
-    ['channelTitle', 'id', 'publishedAt', 'thumbnails', 'title', 'viewCount']);
-  assert.equal(typeof item.viewCount, 'string'); // strings here are what broke the old front-end
-  assert.ok(item.thumbnails.maxres.url); // all five sizes always present
-  assert.equal(yt.calls[0].searchParams.get('chart'), 'mostPopular'); // cheap quota path
+  assert.match(body, /Old video/);
+  assert.match(body, /latest copy we have/);
 });
 
-test('GLOBAL mode aggregates regions and ranks multi-chart videos first', async (t) => {
-  const yt = stubYouTube();
-  t.after(yt.restore);
-
-  const body = await (await call('/videos?country=GLOBAL&page=1&pageSize=2', makeEnv())).json();
-  assert.equal(body.mode, 'GLOBAL');
-  assert.equal(body.page, 1);
-  assert.equal(body.pageSize, 2);
-  assert.equal(body.regionsQueried, 2);
-  assert.equal(body.regionsOk, 2);
-  assert.equal(body.totalApprox, 5); // US1, US2, GB1, GB2 + the shared video
-  assert.equal(body.items.length, 2);
-  assert.equal(body.items[0].id, 'SHARED'); // charts in both regions -> ranked first
-
-  const page2 = await (await call('/videos?country=GLOBAL&page=2&pageSize=2', makeEnv())).json();
-  assert.equal(page2.items.length, 2);
-  assert.notEqual(page2.items[0].id, body.items[0].id);
+test('no data at all renders an empty state that is noindex, never a crash', async () => {
+  const { res, body } = await get('/en/trending/us/', { env: {} });
+  assert.equal(res.status, 200);
+  assert.match(body, /No list is available/);
+  assert.match(body, /noindex/);
 });
 
-test('invalid parameters return 400 with a JSON error (the old API returned 500)', async () => {
-  const env = makeEnv();
-  for (const path of ['/videos?type=bogus', '/videos?country=XX1', '/videos?category=abc']) {
-    const res = await call(path, env);
-    assert.equal(res.status, 400, `${path} should be a 400`);
-    const body = await res.json();
-    assert.ok(body.error?.message, `missing error message for ${path}`);
-  }
+test('video titles from YouTube are escaped', async () => {
+  const yt = fakeYouTube(() => ({ body: { items: [ytItem('x1', { snippet: { title: '<script>alert(1)</script>', thumbnails: {} } })] } }));
+  const { body } = await get('/en/trending/gb/', { env: { TRENDING: memoryKV(), YOUTUBE_API_KEY: 'k' }, fetchImpl: yt.fetchImpl });
+  assert.ok(!body.includes('<script>alert(1)</script>'));
+  assert.match(body, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
 });
 
-test('unknown endpoints 404 and OPTIONS preflight is answered', async () => {
-  assert.equal((await call('/nope', makeEnv())).status, 404);
+test('cron refresh writes every country and stops early on quota errors', async () => {
+  const kv = memoryKV();
+  const ok = await refreshAll({ TRENDING: kv, YOUTUBE_API_KEY: 'k' }, { fetchImpl: fakeYouTube().fetchImpl });
+  assert.equal(ok.ok, COUNTRIES.length);
+  assert.equal(kv.store.size, COUNTRIES.length);
 
-  const preflight = await worker.fetch(
-    new Request(`${API}/videos`, { method: 'OPTIONS', headers: { Origin: 'https://trendvid.net' } }),
-    makeEnv(),
-    {},
-  );
-  assert.equal(preflight.status, 204);
-  assert.equal(preflight.headers.get('access-control-allow-origin'), 'https://trendvid.net');
+  const quota = fakeYouTube(() => ({ status: 403, body: { error: { errors: [{ reason: 'quotaExceeded' }] } } }));
+  const report = await refreshAll({ TRENDING: memoryKV(), YOUTUBE_API_KEY: 'k' }, { fetchImpl: quota.fetchImpl });
+  assert.equal(quota.calls.length, 1);
+  assert.equal(report.failed[0].reason, 'quotaExceeded');
 });
 
-test('CORS only echoes allow-listed origins (previews included via wildcards)', async () => {
-  const env = makeEnv({ ALLOWED_ORIGINS: 'https://trendvid.net,https://*.pages.dev' });
-
-  const allowed = await call('/diag', env, { Origin: 'https://trendvid.net' });
-  assert.equal(allowed.headers.get('access-control-allow-origin'), 'https://trendvid.net');
-
-  const preview = await call('/diag', env, { Origin: 'https://trendvid-preview.pages.dev' });
-  assert.equal(preview.headers.get('access-control-allow-origin'), 'https://trendvid-preview.pages.dev');
-
-  const blocked = await call('/diag', env, { Origin: 'https://evil.example' });
-  assert.equal(blocked.headers.get('access-control-allow-origin'), null);
+test('health endpoint reports bindings without leaking the key', async () => {
+  const { body } = await get('/api/health', { env: { YOUTUBE_API_KEY: 'secret-value', TRENDING: memoryKV() } });
+  const data = JSON.parse(body);
+  assert.equal(data.youtubeKey, true);
+  assert.equal(data.kv, true);
+  assert.ok(!body.includes('secret-value'));
 });
 
-test('categories fall back to a static list instead of failing', async () => {
-  const original = globalThis.fetch;
-  globalThis.fetch = async () => { throw new Error('upstream down'); };
-  try {
-    const res = await call('/categories?country=US', makeEnv());
-    assert.equal(res.status, 200);
-    const body = await res.json();
-    assert.equal(body.degraded, true);
-    assert.equal(body.source, 'fallback');
-    assert.ok(body.categories.length >= 10);
-
-    assert.equal((await call('/categories?country=USA', makeEnv())).status, 400);
-  } finally {
-    globalThis.fetch = original;
-  }
-});
-
-test('categories come from YouTube when available', async (t) => {
-  const yt = stubYouTube();
-  t.after(yt.restore);
-  const body = await (await call('/categories?country=US', makeEnv())).json();
-  assert.equal(body.source, 'youtube');
-  assert.deepEqual(body.categories, [{ id: '10', title: 'Music' }, { id: '20', title: 'Gaming' }]);
-});
-
-test('stale-while-error: an expired cache entry is still served when YouTube fails', async () => {
-  const stalePayload = {
-    mode: 'COUNTRY',
-    country: 'US',
-    type: 'trending',
-    category: '0',
-    nextPageToken: '',
-    prevPageToken: '',
-    items: [{ id: 'CACHED', title: 'cached', channelTitle: '', publishedAt: '', viewCount: '1', thumbnails: {} }],
-  };
-  const kv = makeKv({
-    'v3:videos:trending:US:all:tfirst:20': { at: Date.now() - 120_000, data: stalePayload },
-  });
-
-  const original = globalThis.fetch;
-  globalThis.fetch = async () => { throw new Error('quota exhausted'); };
-  try {
-    const res = await call('/videos?country=US', makeEnv({ TRENDING: kv, CACHE_TTL: '30' }));
-    assert.equal(res.status, 200);
-    const body = await res.json();
-    assert.equal(body.stale, true);
-    assert.equal(body.items[0].id, 'CACHED');
-    assert.equal(res.headers.get('x-trendvid-stale'), '1');
-  } finally {
-    globalThis.fetch = original;
-  }
-});
-
-test('a warm cache is served without touching YouTube', async (t) => {
-  const kv = makeKv();
-  const yt = stubYouTube();
-  t.after(yt.restore);
-  const env = makeEnv({ TRENDING: kv });
-
-  const first = await call('/videos?country=US', env);
-  assert.equal(first.headers.get('x-trendvid-cache'), 'MISS');
-  const callsAfterFirst = yt.calls.length;
-
-  const second = await call('/videos?country=US', env);
-  assert.equal(second.headers.get('x-trendvid-cache'), 'HIT');
-  assert.equal(yt.calls.length, callsAfterFirst, 'a cache hit must not call YouTube');
-});
-
-test('diag reports bindings and configuration', async () => {
-  const body = await (await call('/diag', makeEnv())).json();
-  assert.equal(body.ok, true);
-  assert.equal(body.bindings.youtubeKey, true);
-  assert.equal(body.bindings.kvCache, false);
-  assert.equal(body.config.mostViewedSource, 'chart');
-  assert.equal(body.config.regions, 2);
-});
-
-test('pure helpers behave', () => {
-  assert.deepEqual(parseList('a, b ,c', ['x']), ['a', 'b', 'c']);
-  assert.deepEqual(parseList('', ['fallback']), ['fallback']);
-  assert.equal(matchOrigin('https://trendvid.net', 'https://trendvid.net'), true);
-  assert.equal(matchOrigin('https://*.pages.dev', 'https://abc.pages.dev'), true);
-  assert.equal(matchOrigin('https://*.pages.dev', 'https://abc.example.com'), false);
-  assert.equal(matchOrigin('*', 'https://anything.test'), true);
-  assert.equal(intParam('99', { fallback: 20, min: 1, max: 50 }), 50);
-  assert.equal(intParam('abc', { fallback: 20, min: 1, max: 50 }), 20);
-
-  const normalized = normalizeVideo({ id: 'abc', snippet: { title: 't' }, statistics: { viewCount: '7' } });
-  assert.deepEqual(Object.keys(normalized.thumbnails).sort(),
-    ['default', 'high', 'maxres', 'medium', 'standard']);
-  assert.equal(normalized.thumbnails.high.url, 'https://i.ytimg.com/vi/abc/hqdefault.jpg');
-  assert.equal(normalized.viewCount, '7');
+test('fetch handler rejects POST', async () => {
+  const post = await worker.fetch(new Request('https://trendvid.net/ar/', { method: 'POST' }), {});
+  assert.equal(post.status, 405);
 });

@@ -2,13 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, v4]
   pull_request:
   workflow_dispatch:
 
 jobs:
   verify:
-    name: Syntax, tests, site files
+    name: Build guides, syntax, tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,34 +17,18 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Syntax check (every JS file)
+      - name: Build guides (fails on invalid front matter)
+        run: npm run build
+
+      - name: Syntax check
         run: npm run check
 
-      - name: Unit + fixture tests (offline, no network)
+      - name: Tests (offline, includes the ads/YouTube-policy guard)
         run: npm test
-
-      - name: Required revenue/SEO files are present
-        run: |
-          missing=0
-          for f in \
-            site/index.html site/about.html site/privacy.html site/terms.html site/contact.html site/404.html \
-            site/robots.txt site/sitemap.xml site/ads.txt site/_headers site/_redirects \
-            site/assets/css/style.css site/assets/js/app.js site/assets/js/config.js site/favicon.ico \
-            api/src/index.js api/wrangler.toml
-          do
-            if [ ! -f "$f" ]; then echo "MISSING: $f"; missing=1; fi
-          done
-          exit $missing
 
       - name: Guard - no secrets committed
         run: |
-          if grep -RIn --exclude-dir=_reference --exclude-dir=.git -E 'AIza[0-9A-Za-z_-]{30,}' . ; then
-            echo "A YouTube API key appears to be committed. Remove it and rotate the key."
+          if grep -RIn --exclude-dir=.git --exclude-dir=node_modules -E 'AIza[0-9A-Za-z_-]{30,}' . ; then
+            echo "A Google API key appears to be committed. Remove it and rotate the key."
             exit 1
           fi
-
-      - name: Live API contract check (non-blocking)
-        continue-on-error: true
-        env:
-          TRENDVID_LIVE: '1'
-        run: node --test tests/live-contract.test.mjs

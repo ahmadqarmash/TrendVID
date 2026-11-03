@@ -1,0 +1,13 @@
+# Static asset headers (Workers static assets read this file). HTML headers are set in src/worker.js.
+/assets/*
+  X-Content-Type-Options: nosniff
+  Cache-Control: public, max-age=3600
+
+/assets/img/*
+  Cache-Control: public, max-age=604800
+
+/favicon.ico
+  Cache-Control: public, max-age=604800
+
+/ads.txt
+  Cache-Control: public, max-age=3600
