@@ -1,25 +1,20 @@
 {
   "name": "trendvid",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
-  "description": "TrendVid - trending and most-viewed YouTube directory: static site (Cloudflare Pages) + API (Cloudflare Worker).",
+  "description": "TrendVid 4 - Arabic-first creator hub: free YouTube creator tools, guides and an ad-free trending browser, served by one Cloudflare Worker.",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test --test-reporter=spec",
+    "build": "node scripts/build-content.mjs",
     "check": "node scripts/check-syntax.mjs",
+    "pretest": "node scripts/build-content.mjs",
+    "test": "node --test --test-reporter=spec",
     "verify": "npm run check && npm test",
-    "serve": "node scripts/serve.mjs",
-    "dev:api": "wrangler dev --config api/wrangler.toml",
-    "deploy:api": "wrangler deploy --config api/wrangler.toml"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
   },
-  "keywords": [
-    "youtube",
-    "trending",
-    "cloudflare-pages",
-    "cloudflare-workers"
-  ],
   "license": "UNLICENSED"
 }

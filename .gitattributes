@@ -1,8 +1,7 @@
 # Normalise line endings so Windows checkouts and the Linux build/deploy agree.
 * text=auto eol=lf
 
-# Keep captured reference material and fixtures byte-exact.
-_reference/** -text
+# Keep test fixtures byte-exact.
 tests/fixtures/*.json -text
 
 # Binary assets
