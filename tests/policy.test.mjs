@@ -13,8 +13,9 @@ import { fakeYouTube, get, memoryKV } from './helpers.mjs';
 for (const a of AFFILIATES) a.url = `https://partner.example.org/${a.id}?ref=trendvid`;
 const AFFILIATE_HOST = 'partner.example.org';
 
-const TRENDING_PATHS = ['/ar/trending/', '/en/trending/', '/ar/trending/sa/', '/en/trending/eg/music/', '/en/trending/us/gaming/'];
-const AD_PATHS = ['/ar/', '/en/', '/ar/tools/', ...TOOLS.map((t) => `/en/tools/${t.slug}/`), '/ar/about/'];
+// The home page is the trending view, so it belongs here too.
+const TRENDING_PATHS = ['/ar/', '/en/', '/ar/trending/sa/', '/en/trending/eg/music/', '/en/trending/us/gaming/'];
+const AD_PATHS = ['/ar/tools/', '/en/tools/', ...TOOLS.map((t) => `/en/tools/${t.slug}/`), '/ar/about/'];
 
 test('trending pages (YouTube data) never render ads or affiliate links', async () => {
   const { fetchImpl } = fakeYouTube();
@@ -34,7 +35,14 @@ test('a trending country page really does contain YouTube data (so the guard abo
   assert.match(body, /Video aaa/);
 });
 
-test('home, tool and about pages carry the ad script and an ad unit', async () => {
+test('the home page shows YouTube data too (so it must stay ad-free)', async () => {
+  const { fetchImpl } = fakeYouTube();
+  const { body } = await get('/ar/', { env: { TRENDING: memoryKV(), YOUTUBE_API_KEY: 'test' }, fetchImpl, cf: { country: 'SA' } });
+  assert.match(body, /data-play="aaa"/);
+  assert.ok(!body.includes('adsbygoogle'));
+});
+
+test('tool and about pages carry the ad script and an ad unit', async () => {
   for (const path of AD_PATHS) {
     const { body } = await get(path);
     assert.match(body, /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/, path);

@@ -116,7 +116,31 @@ export const COUNTRIES = [
   { code: 'FR', ar: 'فرنسا', en: 'France' },
   { code: 'TR', ar: 'تركيا', en: 'Türkiye' },
   { code: 'IN', ar: 'الهند', en: 'India' },
+  { code: 'ES', ar: 'إسبانيا', en: 'Spain' },
+  { code: 'IT', ar: 'إيطاليا', en: 'Italy' },
+  { code: 'NL', ar: 'هولندا', en: 'Netherlands' },
+  { code: 'BR', ar: 'البرازيل', en: 'Brazil' },
+  { code: 'MX', ar: 'المكسيك', en: 'Mexico' },
+  { code: 'ID', ar: 'إندونيسيا', en: 'Indonesia' },
+  { code: 'PK', ar: 'باكستان', en: 'Pakistan' },
+  { code: 'NG', ar: 'نيجيريا', en: 'Nigeria' },
+  { code: 'AU', ar: 'أستراليا', en: 'Australia' },
+  { code: 'JP', ar: 'اليابان', en: 'Japan' },
+  { code: 'KR', ar: 'كوريا الجنوبية', en: 'South Korea' },
 ];
+
+/**
+ * Country shown when the visitor's own country has no trending page (or is unknown).
+ * The cron refreshes every country above, one YouTube call each: keep the list under ~45 so a run
+ * stays inside the Workers Free plan's 50 external subrequests per invocation.
+ */
+export const FALLBACK_COUNTRY = { ar: 'SA', en: 'US' };
+
+/** Visitors located in these countries (Cloudflare IP geolocation) get HTTP 451 instead of the site. */
+export const BLOCKED_COUNTRIES = ['IL'];
+
+/** Cookie that remembers the country a visitor picked (overrides IP detection). */
+export const COUNTRY_COOKIE = 'tv_country';
 
 /** YouTube video categories offered as filters (ids are YouTube's). */
 export const CATEGORIES = [

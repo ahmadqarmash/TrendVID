@@ -1,7 +1,16 @@
 /**
- * Trending page player: the YouTube iframe is created only when a video is played
- * (privacy-enhanced youtube-nocookie.com host), and removed again on close to stop playback.
+ * Trending pages: country picker auto-submit, and the player - the YouTube iframe is created only
+ * when a video is played (privacy-enhanced youtube-nocookie.com host) and removed on close.
  */
+document.documentElement.classList.add('js'); // hides the no-JS "Show" button
+
+document.querySelectorAll('select[data-autosubmit]').forEach((select) => {
+  select.addEventListener('change', () => {
+    if (typeof window.gtag === 'function') window.gtag('event', 'country_change', { country: select.value });
+    select.form.submit();
+  });
+});
+
 const dialog = document.querySelector('[data-player]');
 const frame = dialog?.querySelector('[data-player-frame]');
 const watch = dialog?.querySelector('[data-player-watch]');

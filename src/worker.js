@@ -2,15 +2,19 @@
  * TrendVid 4 - Cloudflare Worker entry.
  *
  *   /                          -> 302 to /ar/ or /en/ (Accept-Language, Arabic by default)
- *   /{lang}/                   home
+ *   /{lang}/                   home = trending for the visitor's country (cookie, else IP)
+ *   /{lang}/set-country/?c=XX  remember a picked country (cookie) and redirect
+ *   /{lang}/trending/[cc]/[category]/   ad-free trending lists (/{lang}/trending/ -> home)
  *   /{lang}/tools/[slug]/      creator tools
  *   /{lang}/guides/[slug]/     guides (Markdown in content/guides)
- *   /{lang}/trending/[cc]/[category]/   ad-free trending lists
  *   /{lang}/about|privacy|terms|contact/
  *   /sitemap.xml /robots.txt /api/health
  * Static files (CSS, JS, images, ads.txt) are served from public/ before the Worker runs.
+ * Visitors in BLOCKED_COUNTRIES get HTTP 451 for every route the Worker serves.
  */
-import { SITE, categoryBySlug, countryByCode, COUNTRIES } from './config.js';
+import {
+  BLOCKED_COUNTRIES, COUNTRIES, COUNTRY_COOKIE, FALLBACK_COUNTRY, SITE, categoryBySlug, countryByCode,
+} from './config.js';
 import { GUIDES } from './generated/guides.js';
 import { normalizeLang } from './i18n.js';
 import { getTrending, refreshAll } from './lib/trending.js';
@@ -18,7 +22,7 @@ import { TOOLS, toolBySlug } from './tools.js';
 import { ASSET_VERSION, absoluteUrl, layout, pathFor } from './views/layout.js';
 import {
   guidePage, guidesIndexPage, homePage, notFoundPage, publishedGuides, staticPage,
-  toolPage, toolsIndexPage, trendingCountryPage, trendingIndexPage,
+  toolPage, toolsIndexPage, trendingCountryPage,
 } from './views/pages.js';
 
 const STATIC_PAGES = ['about', 'privacy', 'terms', 'contact'];
@@ -72,19 +76,63 @@ function baseHeaders(env, url) {
   return headers;
 }
 
-function htmlResponse(env, url, page, { status = 200, maxAge = 300 } = {}) {
+function htmlResponse(env, url, page, { status = 200, maxAge = 300, cacheControl = null, headers = {} } = {}) {
   return new Response(layout({ ...page, siteUrl: siteUrlFor(env) }), {
     status,
     headers: {
       ...baseHeaders(env, url),
       'content-type': 'text/html; charset=utf-8',
-      'cache-control': status === 200 ? `public, max-age=${maxAge}` : 'no-store',
+      'cache-control': cacheControl || (status === 200 ? `public, max-age=${maxAge}` : 'no-store'),
+      ...headers,
     },
   });
 }
 
-function redirect(location, status = 301) {
-  return new Response(null, { status, headers: { location, 'cache-control': status === 301 ? 'public, max-age=86400' : 'no-store' } });
+function redirect(location, status = 301, headers = {}) {
+  return new Response(null, {
+    status,
+    headers: { location, 'cache-control': status === 301 ? 'public, max-age=86400' : 'no-store', ...headers },
+  });
+}
+
+/* ------------------------------------------------------------- visitor country */
+
+/** Two-letter country from Cloudflare's IP geolocation ('' when unknown, e.g. XX or Tor's T1). */
+export function ipCountry(request) {
+  const code = String(request.cf?.country || '').toUpperCase();
+  return /^[A-Z]{2}$/.test(code) && code !== 'XX' ? code : '';
+}
+
+function readCookie(request, name) {
+  const header = request.headers.get('cookie') || '';
+  const match = header.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
+/**
+ * Which country the home page shows: a country the visitor picked (cookie), else their IP country,
+ * else the language's fallback. `detected` is set when the IP country has no trending page.
+ */
+export function resolveCountry(request, lang) {
+  const picked = countryByCode(readCookie(request, COUNTRY_COOKIE));
+  if (picked) return { country: picked, source: 'cookie' };
+  const ip = ipCountry(request);
+  const fromIp = countryByCode(ip);
+  if (fromIp) return { country: fromIp, source: 'ip' };
+  return { country: countryByCode(FALLBACK_COUNTRY[lang]), source: 'fallback', detected: ip };
+}
+
+/** Plain page for blocked regions: no analytics, ads or third-party scripts. */
+function blockedResponse() {
+  const body = `<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex"><title>TrendVid</title>
+<style>body{font:18px/1.7 system-ui,Tahoma,sans-serif;display:grid;place-items:center;min-height:90vh;margin:0;padding:16px;text-align:center}</style></head>
+<body><main><h1>TrendVid</h1><p>هذا الموقع غير متاح في منطقتك.</p><p lang="en" dir="ltr">This website is not available in your region.</p></main></body></html>`;
+  return new Response(body, {
+    status: 451,
+    headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'private, no-store', vary: 'CF-IPCountry' },
+  });
 }
 
 export function preferredLang(acceptLanguage) {
@@ -105,7 +153,6 @@ export function sitemapXml(env) {
   pair([]);
   pair(['tools']);
   for (const tool of TOOLS) pair(['tools', tool.slug]);
-  pair(['trending']);
   for (const c of COUNTRIES) pair(['trending', c.code.toLowerCase()]);
   for (const key of STATIC_PAGES) pair([key]);
 
@@ -136,7 +183,7 @@ ${urls.join('\n')}
 
 function robotsTxt(env, url) {
   if (!isProductionHost(env, url.hostname)) return 'User-agent: *\nDisallow: /\n';
-  return `User-agent: *\nAllow: /\n\nSitemap: ${siteUrlFor(env)}/sitemap.xml\n`;
+  return `User-agent: *\nAllow: /\nDisallow: /ar/set-country/\nDisallow: /en/set-country/\n\nSitemap: ${siteUrlFor(env)}/sitemap.xml\n`;
 }
 
 /* ----------------------------------------------------------------------- router */
@@ -144,6 +191,8 @@ function robotsTxt(env, url) {
 export async function handleRequest(request, env, { fetchImpl = fetch } = {}) {
   const url = new URL(request.url);
   const { pathname } = url;
+
+  if (BLOCKED_COUNTRIES.includes(ipCountry(request))) return blockedResponse();
 
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     return new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } });
@@ -188,7 +237,28 @@ export async function handleRequest(request, env, { fetchImpl = fetch } = {}) {
   const [, section, slug, sub, extra] = parts;
   const notFound = () => htmlResponse(env, url, notFoundPage(lang), { status: 404 });
 
-  if (!section) return htmlResponse(env, url, homePage(lang, ctx));
+  if (!section) {
+    const { country, source, detected } = resolveCountry(request, lang);
+    const snapshot = await getTrending(env, { country: country.code }, { fetchImpl });
+    // Content depends on the visitor (cookie / IP), so it must never be cached by shared caches.
+    return htmlResponse(env, url, homePage(lang, { country, snapshot, source, detected }, ctx), {
+      cacheControl: 'private, max-age=60',
+      headers: { vary: 'Cookie, CF-IPCountry' },
+    });
+  }
+
+  if (section === 'set-country') {
+    const country = countryByCode(url.searchParams.get('c'));
+    if (!country || slug) return redirect(pathFor(lang), 302);
+    const category = categoryBySlug(url.searchParams.get('cat') || '');
+    const target = url.searchParams.get('to') === 'home'
+      ? pathFor(lang)
+      : pathFor(lang, 'trending', country.code.toLowerCase(), category?.slug);
+    const secure = url.protocol === 'https:' ? '; Secure' : '';
+    return redirect(target, 302, {
+      'set-cookie': `${COUNTRY_COOKIE}=${country.code}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`,
+    });
+  }
 
   if (section === 'tools') {
     if (!slug) return htmlResponse(env, url, toolsIndexPage(lang, ctx));
@@ -203,7 +273,7 @@ export async function handleRequest(request, env, { fetchImpl = fetch } = {}) {
   }
 
   if (section === 'trending') {
-    if (!slug) return htmlResponse(env, url, trendingIndexPage(lang, ctx));
+    if (!slug) return redirect(pathFor(lang)); // the home page is the trending index now
     const country = countryByCode(slug);
     const category = sub ? categoryBySlug(sub) : null;
     if (!country || (sub && !category) || extra) return notFound();

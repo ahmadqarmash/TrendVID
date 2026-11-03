@@ -45,6 +45,8 @@ AdSense approval and Google rankings need real content. Aim for 8–10 guides be
    `trendvid.net` and `www.trendvid.net` as custom domains. This replaces the old site.
 2. Check `https://trendvid.net/robots.txt` shows `Allow: /` and the sitemap line.
 3. Google Search Console: submit `https://trendvid.net/sitemap.xml`.
+   Cloudflare → trendvid.net → Security → WAF → Custom rules: add `ip.src.country eq "IL"` → Block,
+   so static files are restricted too (the Worker already returns 451 for every page).
 4. AdSense → Sites: make sure `trendvid.net` is approved; Privacy & messaging → publish the GDPR
    message, then set `ANALYTICS.consentMode: true` in `src/config.js` and redeploy.
 5. After a week with no CSP reports breaking ads/analytics, switch the header in `src/worker.js`

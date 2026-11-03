@@ -85,9 +85,9 @@ function header(lang, alternates) {
           <span class="logo-mark" aria-hidden="true">▶</span><span>TrendVid</span>
         </a>
         <nav class="main-nav" aria-label="${t('menu')}">
+          <a href="${pathFor(lang)}">${t('navTrending')}</a>
           <a href="${pathFor(lang, 'tools')}">${t('navTools')}</a>
           <a href="${pathFor(lang, 'guides')}">${t('navGuides')}</a>
-          <a href="${pathFor(lang, 'trending')}">${t('navTrending')}</a>
         </nav>
         <div class="header-actions">
           <a class="lang-switch" href="${switchHref}" hreflang="${other}" lang="${other}" title="${t('switchLangLabel')}">${t('switchLang')}</a>

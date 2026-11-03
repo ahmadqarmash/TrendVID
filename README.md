@@ -9,14 +9,24 @@ no runtime dependencies.
 
 | Page type | Shows YouTube data? | Ads | Affiliate links |
 | --- | --- | --- | --- |
-| Home, tools, guides, about | No | ✅ AdSense | ✅ creator tools (vidIQ, TubeBuddy, Epidemic Sound, VEED, Descript) |
-| Trending (`/{lang}/trending/...`) | Yes | ❌ never | ❌ never |
+| Home (`/{lang}/`) = trending for the visitor's country | Yes | ❌ never | ❌ never |
+| Trending (`/{lang}/trending/{cc}/[category]/`) | Yes | ❌ never | ❌ never |
+| Tools, guides, about | No | ✅ AdSense | ✅ creator tools (vidIQ, TubeBuddy, Epidemic Sound, VEED, Descript) |
 | Privacy, terms, contact, 404 | No | ❌ | ❌ |
 
 The split is required by the **YouTube API Services Developer Policies, III.G.1.d**: a page that
-contains YouTube API data must not carry advertising, sponsorships or promotions. The trending pages
-exist to bring visitors in; they link to the tools and guides, which earn. `tests/policy.test.mjs`
-fails the build if a trending page ever renders an ad or affiliate link.
+contains YouTube API data must not carry advertising, sponsorships or promotions. Trending (and so the
+home page) brings visitors in and links prominently to the tools and guides, which earn.
+`tests/policy.test.mjs` fails the build if a trending page ever renders an ad or affiliate link.
+
+## Country, language and access
+
+- The home page shows trending for the visitor's country: a country they picked (cookie
+  `tv_country`, set via `/{lang}/set-country/`), else Cloudflare's IP geolocation (`request.cf.country`),
+  else `FALLBACK_COUNTRY` (SA for Arabic, US for English) with a notice.
+- Visitors located in `BLOCKED_COUNTRIES` (`IL`) get HTTP 451 on every route the Worker serves.
+  Static files are served before the Worker runs; once `trendvid.net` is attached, add a Cloudflare
+  WAF custom rule (`ip.src.country eq "IL"` → Block) so assets are covered too.
 
 Other policy constraints built in: no derived metrics (we show YouTube's own order and view counts),
 trending data expires after 26 hours (limit is 30 days), and privacy/terms carry the required
@@ -55,9 +65,10 @@ npm run deploy    # wrangler deploy (builds guides first) - see docs/LAUNCH.md b
 
 `/` redirects to `/ar/` or `/en/` by browser language (Arabic by default).
 
+- `/{lang}/` trending for the visitor's country · `/{lang}/trending/{country}/[{category}/]`
+- `/{lang}/set-country/?c=XX&to=home|page[&cat=slug]` remembers a picked country, then redirects
 - `/{lang}/tools/` · `/{lang}/tools/{earnings-calculator|title-checker|description-checker|thumbnail-checker}/`
 - `/{lang}/guides/` · `/{lang}/guides/{slug}/`
-- `/{lang}/trending/` · `/{lang}/trending/{country}/` · `/{lang}/trending/{country}/{category}/`
 - `/{lang}/about|privacy|terms|contact/` · `/sitemap.xml` · `/robots.txt` · `/api/health`
 
 Any host other than `trendvid.net` (workers.dev, previews) is served with `noindex` and a

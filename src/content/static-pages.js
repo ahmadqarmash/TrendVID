@@ -69,6 +69,7 @@ export const PAGES = {
         ]],
         ['البيانات التي تُعالَج عند زيارتك', [
           '<strong>الاستضافة والأمان:</strong> يعمل الموقع على Cloudflare التي تعالج عنوان IP ومعلومات المتصفح لتقديم الصفحات ومنع إساءة الاستخدام.',
+          '<strong>بلدك:</strong> نستخدم البلد الذي تستنتجه Cloudflare من عنوان IP الخاص بك لعرض الفيديوهات الرائجة في بلدك تلقائيًا. لا نخزّن عنوان IP. إذا اخترت بلدًا بنفسك نحفظه في ملف تعريف ارتباط (tv_country) لمدة سنة؛ يمكنك حذفه من إعدادات المتصفح.',
           '<strong>تفضيلاتك:</strong> نحفظ اختيارك للوضع الليلي في متصفحك فقط (localStorage).',
           '<strong>التحليلات:</strong> نستخدم Google Analytics 4 لفهم الاستخدام بشكل إجمالي (مثل الصفحات الأكثر زيارة).',
         ]],
@@ -100,6 +101,7 @@ export const PAGES = {
         ]],
         ['Data processed when you visit', [
           '<strong>Hosting and security:</strong> the site runs on Cloudflare, which processes your IP address and browser details to deliver pages and block abuse.',
+          '<strong>Your country:</strong> we use the country Cloudflare derives from your IP address to show trending videos for your country automatically. We do not store your IP address. If you pick a country yourself, we remember it in a cookie (tv_country) for one year; you can delete it in your browser settings.',
           '<strong>Your preferences:</strong> your dark-mode choice is stored only in your browser (localStorage).',
           '<strong>Analytics:</strong> we use Google Analytics 4 to understand usage in aggregate (for example, which pages are popular).',
         ]],
@@ -136,6 +138,7 @@ export const PAGES = {
           'الفيديوهات والصور المصغّرة والعناوين ملك لأصحابها ويوتيوب. نصوص الأدلة والأدوات ملك TrendVid، ولا يجوز نسخها بالكامل دون إذن.',
         ]],
         ['الروابط الخارجية', ['قد نضع روابط لمواقع أخرى، بعضها روابط عمولة. لسنا مسؤولين عن محتوى تلك المواقع أو خدماتها.']],
+        ['التوفر', ['قد لا يكون الموقع متاحًا في بعض المناطق.']],
         ['إخلاء المسؤولية', ['يُقدَّم الموقع «كما هو» دون ضمانات. لا نتحمّل مسؤولية أي خسارة ناتجة عن استخدامه في حدود ما يسمح به القانون.']],
         ['التواصل', [`للاستفسارات: ${MAIL}`]],
       ],
@@ -155,6 +158,7 @@ export const PAGES = {
           'Videos, thumbnails and titles belong to their owners and YouTube. Guide and tool texts belong to TrendVid and may not be copied in full without permission.',
         ]],
         ['External links', ['We link to other sites, some through affiliate links. We are not responsible for their content or services.']],
+        ['Availability', ['The site may not be available in every region.']],
         ['Disclaimer', ['The site is provided “as is” without warranties. To the extent the law allows, we are not liable for any loss arising from its use.']],
         ['Contact', [`Questions: ${MAIL}`]],
       ],

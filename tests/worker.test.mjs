@@ -21,7 +21,7 @@ test('canonical URL rules: trailing slash, lower case, legacy v3 paths', async (
 });
 
 test('every page renders with lang/dir, canonical and both hreflang alternates', async () => {
-  const pages = ['/ar/', '/en/tools/', '/ar/tools/earnings-calculator/', '/en/guides/', '/ar/trending/', '/en/about/'];
+  const pages = ['/ar/', '/en/tools/', '/ar/tools/earnings-calculator/', '/en/guides/', '/ar/trending/sa/', '/en/about/'];
   for (const path of pages) {
     const { res, body } = await get(path);
     assert.equal(res.status, 200, path);
@@ -32,6 +32,73 @@ test('every page renders with lang/dir, canonical and both hreflang alternates',
     assert.match(body, /hreflang="en"/, path);
     assert.equal((body.match(/<h1[ >]/g) || []).length, 1, `${path} must have exactly one h1`);
   }
+});
+
+/* ------------------------------------------------ home = trending for the visitor's country */
+
+const liveEnv = () => ({ TRENDING: memoryKV(), YOUTUBE_API_KEY: 'k' });
+
+test("home shows the trending chart for the visitor's IP country", async () => {
+  const yt = fakeYouTube();
+  const { res, body } = await get('/ar/', { env: liveEnv(), fetchImpl: yt.fetchImpl, cf: { country: 'EG' } });
+  assert.equal(res.status, 200);
+  assert.equal(yt.calls[0].searchParams.get('regionCode'), 'EG');
+  assert.match(body, /الرائج على يوتيوب في مصر/);
+  assert.match(body, /حسب موقعك/);
+  assert.match(body, /<option value="EG" selected>/);
+  assert.match(body, /data-play="aaa"/);
+  assert.equal(res.headers.get('cache-control'), 'private, max-age=60', 'per-visitor page must not be shared-cached');
+  assert.match(res.headers.get('vary'), /Cookie/);
+});
+
+test('a picked country (cookie) wins over the IP country', async () => {
+  const yt = fakeYouTube();
+  const { body } = await get('/en/', {
+    env: liveEnv(), fetchImpl: yt.fetchImpl, cf: { country: 'EG' }, headers: { cookie: 'a=1; tv_country=JO' },
+  });
+  assert.equal(yt.calls[0].searchParams.get('regionCode'), 'JO');
+  assert.match(body, /Trending on YouTube in Jordan/);
+  assert.ok(!body.includes('Based on your location'));
+});
+
+test('a country without a trending page falls back by language, with a notice', async () => {
+  const yt = fakeYouTube();
+  const ar = await get('/ar/', { env: liveEnv(), fetchImpl: yt.fetchImpl, cf: { country: 'SY' } });
+  assert.equal(yt.calls[0].searchParams.get('regionCode'), 'SA');
+  assert.match(ar.body, /غير متوفرة لبلدك/);
+  const en = await get('/en/', { env: liveEnv(), fetchImpl: yt.fetchImpl }); // no geolocation at all
+  assert.equal(yt.calls[1].searchParams.get('regionCode'), 'US');
+  assert.ok(!en.body.includes('no trending list for your country'), 'no notice when the country is unknown');
+});
+
+test('visitors located in Israel get 451 on every route, with no tracking scripts', async () => {
+  for (const path of ['/', '/ar/', '/en/tools/', '/en/trending/sa/', '/api/health', '/robots.txt', '/nope/']) {
+    const { res, body } = await get(path, { cf: { country: 'IL' } });
+    assert.equal(res.status, 451, path);
+    assert.match(body, /not available in your region/);
+    assert.ok(!/adsbygoogle|googletagmanager|<script/.test(body), `${path} must load nothing third-party`);
+  }
+  assert.equal((await get('/en/tools/', { cf: { country: 'JO' } })).res.status, 200, 'other countries unaffected');
+});
+
+test('set-country remembers the choice in a cookie and redirects', async () => {
+  const home = await get('/ar/set-country/?c=eg&to=home');
+  assert.equal(home.res.status, 302);
+  assert.equal(home.res.headers.get('location'), '/ar/');
+  assert.match(home.res.headers.get('set-cookie'), /^tv_country=EG; Path=\/; Max-Age=31536000; SameSite=Lax; Secure$/);
+
+  const page = await get('/en/set-country/?c=AE&to=page&cat=music');
+  assert.equal(page.res.headers.get('location'), '/en/trending/ae/music/');
+
+  const bad = await get('/en/set-country/?c=IL');
+  assert.equal(bad.res.headers.get('location'), '/en/');
+  assert.equal(bad.res.headers.get('set-cookie'), null);
+});
+
+test('the old trending index redirects to the home page', async () => {
+  const { res } = await get('/ar/trending/');
+  assert.equal(res.status, 301);
+  assert.equal(res.headers.get('location'), '/ar/');
 });
 
 test('unknown pages, countries and categories are 404 + noindex', async () => {
@@ -50,6 +117,7 @@ test('non-production hosts are noindex and robots-blocked; production is open', 
 
   const prod = await get('/robots.txt');
   assert.match(prod.body, /Allow: \//);
+  assert.match(prod.body, /Disallow: \/ar\/set-country\//);
   assert.match(prod.body, /Sitemap: https:\/\/trendvid\.net\/sitemap\.xml/);
   assert.equal((await get('/ar/')).res.headers.get('x-robots-tag'), null);
 });

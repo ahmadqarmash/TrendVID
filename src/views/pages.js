@@ -52,37 +52,33 @@ function countryLinks(lang, current = null) {
     </ul>`;
 }
 
-function creatorCta(lang) {
-  const t = translator(lang);
-  return html`
-    <aside class="cta-box">
-      <div>
-        <h2>${t('creatorCtaTitle')}</h2>
-        <p>${t('creatorCtaText')}</p>
-      </div>
-      <a class="btn" href="${pathFor(lang, 'tools')}">${t('homeHeroCta')}</a>
-    </aside>`;
-}
 
 /* ------------------------------------------------------------------------- home */
+/* The home page IS the trending view for the visitor's country. No ads: it shows YouTube data. */
 
-export function homePage(lang, { siteUrl }) {
+/**
+ * @param {object} data
+ * @param {object} data.country    entry from COUNTRIES
+ * @param {object} data.snapshot   { items, fetchedAt, stale }
+ * @param {'cookie'|'ip'|'fallback'} data.source  how the country was chosen
+ * @param {string} [data.detected] visitor's IP country when it had no trending page
+ */
+export function homePage(lang, data, ctx) {
   const t = translator(lang);
-  const guides = publishedGuides(lang).slice(0, 3);
-  const featured = ['SA', 'EG', 'AE', 'JO', 'MA', 'IQ', 'US', 'GB'];
+  const page = trendingView(lang, { ...data, category: null, isHome: true }, ctx);
   return {
-    lang,
+    ...page,
     title: t('homeTitle'),
     description: t('homeDescription'),
     path: pathFor(lang),
     alternates: both(),
-    ads: true,
+    noindex: false,
     schema: [
       {
         '@context': 'https://schema.org',
         '@type': 'WebSite',
         name: 'TrendVid',
-        url: absoluteUrl(siteUrl, pathFor(lang)),
+        url: absoluteUrl(ctx.siteUrl, pathFor(lang)),
         inLanguage: lang,
         description: t('homeDescription'),
       },
@@ -90,53 +86,12 @@ export function homePage(lang, { siteUrl }) {
         '@context': 'https://schema.org',
         '@type': 'Organization',
         name: 'TrendVid',
-        url: absoluteUrl(siteUrl, '/'),
-        logo: absoluteUrl(siteUrl, '/assets/img/og.png'),
+        url: absoluteUrl(ctx.siteUrl, '/'),
+        logo: absoluteUrl(ctx.siteUrl, '/assets/img/og.png'),
         email: SITE.contactEmail,
       },
+      ...page.schema,
     ],
-    body: html`
-      <section class="hero">
-        <h1>${t('homeHeroTitle')}</h1>
-        <p class="lead">${t('homeHeroLead')}</p>
-        <div class="hero-actions">
-          <a class="btn" href="${pathFor(lang, 'tools')}">${t('homeHeroCta')}</a>
-          <a class="btn btn-ghost" href="${pathFor(lang, 'trending')}">${t('homeHeroCta2')}</a>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <div><h2>${t('homeToolsTitle')}</h2><p class="muted">${t('homeToolsLead')}</p></div>
-          <a href="${pathFor(lang, 'tools')}">${t('allTools')}</a>
-        </div>
-        <ul class="card-grid">${TOOLS.map((tool) => toolCard(lang, tool))}</ul>
-      </section>
-
-      ${adSlot(lang)}
-
-      <section class="section">
-        <div class="section-head">
-          <h2>${t('homeGuidesTitle')}</h2>
-          <a href="${pathFor(lang, 'guides')}">${t('allGuides')}</a>
-        </div>
-        ${guides.length
-          ? html`<ul class="card-grid">${guides.map((g) => guideCard(lang, g))}</ul>`
-          : html`<p class="empty">${t('guidesEmpty')}</p>`}
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <div><h2>${t('homeTrendingTitle')}</h2><p class="muted">${t('homeTrendingLead')}</p></div>
-          <a href="${pathFor(lang, 'trending')}">${t('allCountries')}</a>
-        </div>
-        <ul class="country-list">
-          ${featured.map((code) => {
-            const c = COUNTRIES.find((x) => x.code === code);
-            return html`<li><a href="${pathFor(lang, 'trending', code.toLowerCase())}">${c[lang]}</a></li>`;
-          })}
-        </ul>
-      </section>`,
   };
 }
 
@@ -316,59 +271,77 @@ export function guidePage(lang, guide, { siteUrl }) {
 /* --------------------------------------------------------------------- trending */
 /* No ads and no affiliate links anywhere in this section (YouTube API policy III.G.1.d). */
 
-export function trendingIndexPage(lang, { siteUrl }) {
-  const t = translator(lang);
-  return {
-    lang,
-    title: `${t('trendingTitle')} | TrendVid`,
-    description: t('trendingDescription'),
-    path: pathFor(lang, 'trending'),
-    alternates: both('trending'),
-    ads: false,
-    body: html`
-      ${breadcrumbs(siteUrl, [[t('home'), pathFor(lang)], [t('navTrending'), pathFor(lang, 'trending')]])}
-      <header class="page-head">
-        <h1>${t('trendingTitle')}</h1>
-        <p class="lead">${t('trendingLead')}</p>
-      </header>
-      ${countryLinks(lang)}
-      ${creatorCta(lang)}`,
-  };
-}
-
-function videoItem(lang, video, index) {
+function videoCard(lang, video, index) {
   const t = translator(lang);
   const views = formatCompact(video.viewCount, lang);
-  // <bdi> keeps a Latin channel name from reordering the Arabic view count next to it.
-  const meta = [video.channelTitle, views ? t('views', views) : '', formatRelative(video.publishedAt, lang)]
-    .filter(Boolean)
-    .map((part, i) => html`${i ? ' · ' : ''}<bdi>${part}</bdi>`);
+  const when = formatRelative(video.publishedAt, lang);
   return html`
-    <li class="video">
-      <span class="rank" aria-hidden="true">${index + 1}</span>
-      <button type="button" class="video-thumb" data-play="${video.id}" data-title="${video.title}" aria-label="${t('play')}: ${video.title}">
-        <img src="${video.thumb}" alt="" width="320" height="180" loading="${index < 4 ? 'eager' : 'lazy'}" decoding="async">
+    <li class="vcard">
+      <button type="button" class="vthumb" data-play="${video.id}" data-title="${video.title}" aria-label="${t('play')}: ${video.title}">
+        <img src="${video.thumb}" alt="" width="320" height="180" loading="${index < 6 ? 'eager' : 'lazy'}" decoding="async">
+        <span class="vrank">${index + 1}</span>
         <span class="play-icon" aria-hidden="true">▶</span>
       </button>
-      <div class="video-body">
+      <div class="vbody">
         <h3 dir="auto"><a href="https://www.youtube.com/watch?v=${video.id}" rel="noopener" target="_blank">${video.title}</a></h3>
-        <p class="meta">${meta}</p>
+        <p class="meta"><bdi>${video.channelTitle}</bdi></p>
+        <p class="meta">${views ? html`<bdi>${t('views', views)}</bdi>` : ''}${views && when ? ' · ' : ''}${when ? html`<bdi>${when}</bdi>` : ''}</p>
       </div>
     </li>`;
 }
 
-export function trendingCountryPage(lang, { country, category, snapshot }, { siteUrl, now = Date.now() }) {
+/** Country <select>; works without JS (submit button), auto-submits with JS. */
+function countryPicker(lang, { country, category, isHome, source }) {
+  const t = translator(lang);
+  return html`
+    <form class="country-picker" method="get" action="${pathFor(lang, 'set-country')}">
+      <label for="country-select">${t('countryLabel')}</label>
+      <select id="country-select" name="c" data-autosubmit>
+        ${COUNTRIES.map((c) => html`<option value="${c.code}"${c.code === country.code ? raw(' selected') : ''}>${c[lang]}</option>`)}
+      </select>
+      <input type="hidden" name="to" value="${isHome ? 'home' : 'page'}">
+      ${category ? html`<input type="hidden" name="cat" value="${category.slug}">` : ''}
+      <button class="btn btn-ghost btn-sm" type="submit" data-nojs>${t('show')}</button>
+      ${source === 'ip' ? html`<span class="geo-note">📍 ${t('detectedByLocation')}</span>` : ''}
+    </form>`;
+}
+
+function categoryChips(lang, { country, category, isHome }) {
+  const t = translator(lang);
+  const cc = country.code.toLowerCase();
+  const allHref = isHome ? pathFor(lang) : pathFor(lang, 'trending', cc);
+  return html`
+    <nav class="chips" aria-label="${t('categoryLabel')}">
+      <a class="chip" href="${allHref}"${!category ? raw(' aria-current="page"') : ''}>${t('allCategories')}</a>
+      ${CATEGORIES.map((c) => html`
+        <a class="chip" href="${pathFor(lang, 'trending', cc, c.slug)}"${c.slug === category?.slug ? raw(' aria-current="page"') : ''}>${c[lang]}</a>`)}
+    </nav>`;
+}
+
+/** Internal links to the money pages (tools) - our own pages, not sold promotions. */
+function toolsStrip(lang) {
+  const t = translator(lang);
+  return html`
+    <section class="tools-strip" aria-labelledby="tools-strip-title">
+      <div class="section-head">
+        <div><h2 id="tools-strip-title">${t('creatorCtaTitle')}</h2><p class="muted">${t('creatorCtaText')}</p></div>
+        <a href="${pathFor(lang, 'tools')}">${t('allTools')}</a>
+      </div>
+      <ul class="card-grid">${TOOLS.map((tool) => toolCard(lang, tool))}</ul>
+    </section>`;
+}
+
+function trendingView(lang, { country, category, snapshot, isHome, source, detected }, { siteUrl, now = Date.now() }) {
   const t = translator(lang);
   const cName = country[lang];
   const catSlug = category?.slug || '';
   const path = pathFor(lang, 'trending', country.code.toLowerCase(), catSlug);
-  const title = category
-    ? t('trendingCountryCategoryTitle', cName, category[lang])
-    : t('trendingCountryTitle', cName);
+  const title = category ? t('trendingCountryCategoryTitle', cName, category[lang]) : t('trendingCountryTitle', cName);
   const items = snapshot.items || [];
   const updated = snapshot.fetchedAt ? formatRelative(new Date(snapshot.fetchedAt).toISOString(), lang, now) : '';
+  const guides = publishedGuides(lang).slice(0, 3);
 
-  const trail = [[t('home'), pathFor(lang)], [t('navTrending'), pathFor(lang, 'trending')], [cName, pathFor(lang, 'trending', country.code.toLowerCase())]];
+  const trail = [[t('home'), pathFor(lang)], [cName, pathFor(lang, 'trending', country.code.toLowerCase())]];
   if (category) trail.push([category[lang], path]);
 
   return {
@@ -389,23 +362,27 @@ export function trendingCountryPage(lang, { country, category, snapshot }, { sit
       })),
     }] : [],
     body: html`
-      ${breadcrumbs(siteUrl, trail)}
-      <header class="page-head">
-        <h1>${title}</h1>
-        <p class="lead">${t('trendingCountryDescription', cName)}</p>
+      ${isHome ? '' : breadcrumbs(siteUrl, trail)}
+      <header class="trend-head">
+        <div>
+          <h1>${title}</h1>
+          <p class="meta">${updated ? `${t('updatedAgo', updated)} · ` : ''}${t('refreshEvery')}</p>
+        </div>
+        ${countryPicker(lang, { country, category, isHome, source })}
       </header>
-      <nav class="chips" aria-label="${t('navTrending')}">
-        <a class="chip" href="${pathFor(lang, 'trending', country.code.toLowerCase())}"${!category ? raw(' aria-current="page"') : ''}>${t('allCategories')}</a>
-        ${CATEGORIES.map((c) => html`
-          <a class="chip" href="${pathFor(lang, 'trending', country.code.toLowerCase(), c.slug)}"${c.slug === catSlug ? raw(' aria-current="page"') : ''}>${c[lang]}</a>`)}
-      </nav>
-      ${updated ? html`<p class="meta">${t('updatedAgo', updated)}</p>` : ''}
+      ${source === 'fallback' && detected ? html`<p class="notice">${t('fallbackNotice', cName)}</p>` : ''}
+      ${categoryChips(lang, { country, category, isHome })}
       ${snapshot.stale ? html`<p class="notice">${t('staleNotice')}</p>` : ''}
       ${items.length
-        ? html`<ol class="video-list">${items.map((v, i) => videoItem(lang, v, i))}</ol>`
+        ? html`<ol class="vgrid">${items.map((v, i) => videoCard(lang, v, i))}</ol>`
         : html`<p class="empty">${t('trendingEmpty')}</p>`}
       <p class="fineprint">${t('sourceYouTube')}</p>
-      ${creatorCta(lang)}
+      ${toolsStrip(lang)}
+      ${guides.length ? html`
+        <section class="section">
+          <div class="section-head"><h2>${t('homeGuidesTitle')}</h2><a href="${pathFor(lang, 'guides')}">${t('allGuides')}</a></div>
+          <ul class="card-grid">${guides.map((g) => guideCard(lang, g))}</ul>
+        </section>` : ''}
       <section class="section">
         <h2>${t('pickCountry')}</h2>
         ${countryLinks(lang, country.code)}
@@ -418,6 +395,10 @@ export function trendingCountryPage(lang, { country, category, snapshot }, { sit
         <div class="player-frame" data-player-frame></div>
       </dialog>`,
   };
+}
+
+export function trendingCountryPage(lang, data, ctx) {
+  return trendingView(lang, { ...data, isHome: false, source: 'page' }, ctx);
 }
 
 /* ----------------------------------------------------------------------- static */

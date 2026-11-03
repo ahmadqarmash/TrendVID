@@ -44,7 +44,10 @@ export function fakeYouTube(respond = () => ({ status: 200, body: { items: [ytIt
   return { fetchImpl, calls };
 }
 
-export async function get(path, { env = {}, host = 'https://trendvid.net', headers = {}, fetchImpl } = {}) {
-  const res = await handleRequest(new Request(host + path, { headers }), { SITE_URL: 'https://trendvid.net', ...env }, { fetchImpl });
+/** Run one request through the Worker. `cf` mimics Cloudflare's request.cf (e.g. { country: 'EG' }). */
+export async function get(path, { env = {}, host = 'https://trendvid.net', headers = {}, fetchImpl, cf } = {}) {
+  const request = new Request(host + path, { headers });
+  if (cf) Object.defineProperty(request, 'cf', { value: cf });
+  const res = await handleRequest(request, { SITE_URL: 'https://trendvid.net', ...env }, { fetchImpl });
   return { res, body: await res.text() };
 }
