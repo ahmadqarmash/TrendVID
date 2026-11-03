@@ -8,6 +8,7 @@
  *  - thumbnails: 1280x720 recommended (min width 640), JPG/GIF/PNG, under 2 MB, 16:9
  */
 import { html } from './lib/html.js';
+import { icon } from './views/icons.js';
 
 const HELP = {
   thumbnails: 'https://support.google.com/youtube/answer/72431',
@@ -20,7 +21,7 @@ const HELP = {
 export const TOOLS = [
   {
     slug: 'earnings-calculator',
-    icon: '💰',
+    icon: 'calculator',
     name: { ar: 'حاسبة أرباح يوتيوب', en: 'YouTube earnings calculator' },
     short: {
       ar: 'قدّر دخل قناتك اليومي والشهري والسنوي من المشاهدات ومعدل RPM.',
@@ -92,7 +93,7 @@ export const TOOLS = [
 
   {
     slug: 'title-checker',
-    icon: '✍️',
+    icon: 'title',
     name: { ar: 'فاحص عنوان الفيديو', en: 'YouTube title checker' },
     short: {
       ar: 'تحقّق من طول العنوان وشاهد كيف يظهر قبل النشر.',
@@ -152,7 +153,7 @@ export const TOOLS = [
 
   {
     slug: 'description-checker',
-    icon: '📝',
+    icon: 'text',
     name: { ar: 'فاحص الوصف والفصول', en: 'Description & chapters checker' },
     short: {
       ar: 'تأكّد أن الوصف ضمن الحد، وأن الطوابع الزمنية تصنع فصولًا صحيحة.',
@@ -217,7 +218,7 @@ export const TOOLS = [
 
   {
     slug: 'thumbnail-checker',
-    icon: '🖼️',
+    icon: 'image',
     name: { ar: 'فاحص الصورة المصغّرة', en: 'Thumbnail checker' },
     short: {
       ar: 'تحقّق من المقاس والحجم والصيغة، وشاهد صورتك بأحجام العرض الحقيقية.',
@@ -258,8 +259,12 @@ export const TOOLS = [
     form: (t) => html`
       <form class="tool" data-tool="thumbnail-checker" novalidate>
         <div class="field">
-          <label for="th-file">${t.file}</label>
-          <input id="th-file" name="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp">
+          <input id="th-file" class="file-input" name="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp">
+          <label class="dropzone" for="th-file">
+            <span class="dropzone-icon" aria-hidden="true">${icon('image', { size: 28 })}</span>
+            <strong>${t.file}</strong>
+            <span class="hint">${t.hint}</span>
+          </label>
         </div>
         <ul class="checks" data-out="checks" aria-live="polite"></ul>
         <div class="thumb-previews" data-out="previews" hidden>
@@ -269,8 +274,8 @@ export const TOOLS = [
         </div>
       </form>`,
     labels: {
-      ar: { file: 'اختر الصورة المصغّرة', large: 'الصفحة الرئيسية', medium: 'نتائج البحث', small: 'الاقتراحات على الجوال' },
-      en: { file: 'Choose your thumbnail', large: 'Home feed', medium: 'Search results', small: 'Mobile suggestions' },
+      ar: { file: 'اختر الصورة المصغّرة أو اسحبها هنا', hint: 'JPG أو PNG أو GIF · حتى 2 ميغابايت · لا تُرفع إلى أي خادم', large: 'الصفحة الرئيسية', medium: 'نتائج البحث', small: 'الاقتراحات على الجوال' },
+      en: { file: 'Choose or drop your thumbnail', hint: 'JPG, PNG or GIF · up to 2 MB · never uploaded', large: 'Home feed', medium: 'Search results', small: 'Mobile suggestions' },
     },
   },
 ];

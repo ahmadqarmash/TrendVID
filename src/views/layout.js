@@ -1,18 +1,20 @@
 /**
- * Page shell + shared components.
+ * Page shell + shared components ("Pulse" design system - styles in public/assets/css/site.css).
  *
  * Revenue rule (YouTube API Services Developer Policies III.G.1.d): a page that shows YouTube
  * API data must not carry ads, sponsorships or promotions. So every page declares `ads`:
- *   - home, tools, guides, about  -> ads: true  (no YouTube data on the page)
- *   - trending pages              -> ads: false (and no affiliate links either)
+ *   - tools, guides, about  -> ads: true  (no YouTube data on the page)
+ *   - home + trending pages -> ads: false (and no affiliate links either)
  * tests/policy.test.mjs fails the build if a trending page ever renders an ad or affiliate link.
  */
-import { ADS, ANALYTICS, SITE, liveAffiliates } from '../config.js';
+import { ADS, ANALYTICS, COUNTRIES, SITE, liveAffiliates } from '../config.js';
 import { dirFor, translator } from '../i18n.js';
 import { html, jsonLd, raw } from '../lib/html.js';
 import { truncate } from '../lib/format.js';
+import { TOOLS } from '../tools.js';
+import { icon, logoMark } from './icons.js';
 
-export const ASSET_VERSION = '4.0.0';
+export const ASSET_VERSION = '4.1.0';
 
 /** "/ar/tools/title-checker/" from ('ar', 'tools', 'title-checker'). */
 export function pathFor(lang, ...segments) {
@@ -25,11 +27,11 @@ export function absoluteUrl(siteUrl, path) {
 }
 
 /** One responsive AdSense unit. Rendered only on pages with ads: true. */
-export function adSlot(lang) {
+export function adSlot(lang, { variant = '' } = {}) {
   if (!ADS.enabled) return '';
   const t = translator(lang);
   return html`
-    <aside class="ad" aria-label="${t('adLabel')}">
+    <aside class="ad-slot${variant ? ` ad-${variant}` : ''}" aria-label="${t('adLabel')}">
       <span class="ad-label">${t('adLabel')}</span>
       <ins class="adsbygoogle" style="display:block" data-ad-client="${ADS.client}" data-ad-slot="${ADS.slot}"
         data-ad-format="auto" data-full-width-responsive="true"></ins>
@@ -43,13 +45,16 @@ export function affiliateBox(lang, toolSlug = null, ids = null) {
   if (Array.isArray(ids) && ids.length) programs = liveAffiliates().filter((a) => ids.includes(a.id));
   if (!programs.length) return '';
   return html`
-    <section class="affiliates" aria-labelledby="aff-title">
-      <h2 id="aff-title">${t('recommendedTitle')}</h2>
-      <ul class="aff-list">
+    <section class="recommend" aria-labelledby="rec-title">
+      <h2 id="rec-title" class="side-title">${icon('sparkle', { size: 18 })} ${t('recommendedTitle')}</h2>
+      <ul class="rec-list">
         ${programs.map((a) => html`
-          <li class="aff">
-            <div><strong>${a.name}</strong><p>${a.pitch[lang] || a.pitch.en}</p></div>
-            <a class="btn btn-ghost" href="${a.url}" rel="sponsored nofollow noopener" target="_blank" data-affiliate="${a.id}">${t('visit')}</a>
+          <li>
+            <a class="rec" href="${a.url}" rel="sponsored nofollow noopener" target="_blank" data-affiliate="${a.id}">
+              <span class="rec-mono" aria-hidden="true">${a.name.slice(0, 1)}</span>
+              <span class="rec-copy"><strong>${a.name}</strong><span>${a.pitch[lang] || a.pitch.en}</span></span>
+              <span class="rec-go">${t('visit')} ${icon('external', { size: 16 })}</span>
+            </a>
           </li>`)}
       </ul>
       <p class="fineprint">${t('affiliateDisclosure')}</p>
@@ -73,52 +78,81 @@ export function breadcrumbs(siteUrl, trail) {
     })}`;
 }
 
-function header(lang, alternates) {
+const current = (nav, key) => (nav === key ? raw(' aria-current="page"') : '');
+
+function header(lang, alternates, nav) {
   const t = translator(lang);
   const other = lang === 'ar' ? 'en' : 'ar';
   const switchHref = alternates?.[other] || pathFor(other);
   return html`
     <a class="skip" href="#main">${t('skipToContent')}</a>
-    <header class="site-header">
-      <div class="wrap header-row">
-        <a class="logo" href="${pathFor(lang)}" aria-label="TrendVid">
-          <span class="logo-mark" aria-hidden="true">▶</span><span>TrendVid</span>
-        </a>
-        <nav class="main-nav" aria-label="${t('menu')}">
-          <a href="${pathFor(lang)}">${t('navTrending')}</a>
-          <a href="${pathFor(lang, 'tools')}">${t('navTools')}</a>
-          <a href="${pathFor(lang, 'guides')}">${t('navGuides')}</a>
+    <header class="topbar" data-topbar>
+      <div class="topbar-inner">
+        <a class="brand" href="${pathFor(lang)}" aria-label="TrendVid">${logoMark('lg-top')}<span class="brand-word">TrendVid</span></a>
+        <nav class="nav" aria-label="${t('menu')}">
+          <a href="${pathFor(lang)}"${current(nav, 'trending')}><span class="live-dot" aria-hidden="true"></span>${t('navTrending')}</a>
+          <a href="${pathFor(lang, 'tools')}"${current(nav, 'tools')}>${t('navTools')}</a>
+          <a href="${pathFor(lang, 'guides')}"${current(nav, 'guides')}>${t('navGuides')}</a>
         </nav>
-        <div class="header-actions">
-          <a class="lang-switch" href="${switchHref}" hreflang="${other}" lang="${other}" title="${t('switchLangLabel')}">${t('switchLang')}</a>
+        <div class="topbar-actions">
+          <a class="lang-pill" href="${switchHref}" hreflang="${other}" lang="${other}" title="${t('switchLangLabel')}">${t('switchLang')}</a>
           <button class="icon-btn" type="button" data-theme-toggle aria-label="${t('themeToggle')}">
-            <span aria-hidden="true" class="theme-icon"></span>
+            ${icon('sun', { cls: 'i-sun' })}${icon('moon', { cls: 'i-moon' })}
           </button>
+          <a class="btn btn-grad btn-sm nav-cta" href="${pathFor(lang, 'tools')}">${icon('sparkle', { size: 16 })}${t('navCta')}</a>
         </div>
       </div>
     </header>`;
 }
 
-function footer(lang) {
+/** App-style bottom navigation for phones. */
+function tabbar(lang, nav) {
   const t = translator(lang);
   return html`
-    <footer class="site-footer">
-      <div class="wrap footer-grid">
-        <div>
-          <a class="logo" href="${pathFor(lang)}"><span class="logo-mark" aria-hidden="true">▶</span><span>TrendVid</span></a>
-          <p class="muted">${t('tagline')}</p>
-          ${SITE.telegramUrl ? html`<p><a href="${SITE.telegramUrl}" rel="noopener" target="_blank">${t('joinTelegram')}</a></p>` : ''}
-        </div>
-        <nav aria-label="Footer">
-          <a href="${pathFor(lang, 'about')}">${t('footerAbout')}</a>
-          <a href="${pathFor(lang, 'privacy')}">${t('footerPrivacy')}</a>
-          <a href="${pathFor(lang, 'terms')}">${t('footerTerms')}</a>
-          <a href="${pathFor(lang, 'contact')}">${t('footerContact')}</a>
-        </nav>
-      </div>
+    <nav class="tabbar" aria-label="${t('menu')}">
+      <a href="${pathFor(lang)}"${current(nav, 'trending')}>${icon('flame', { size: 22 })}<span>${t('navTrending')}</span></a>
+      <a href="${pathFor(lang, 'tools')}"${current(nav, 'tools')}>${icon('grid', { size: 22 })}<span>${t('navTools')}</span></a>
+      <a href="${pathFor(lang, 'guides')}"${current(nav, 'guides')}>${icon('book', { size: 22 })}<span>${t('navGuides')}</span></a>
+    </nav>`;
+}
+
+function footer(lang) {
+  const t = translator(lang);
+  const explore = ['SA', 'EG', 'AE', 'JO', 'MA', 'US'].map((code) => COUNTRIES.find((c) => c.code === code));
+  return html`
+    <footer class="footer">
       <div class="wrap">
-        <p class="fineprint">${t('footerDisclaimer')}</p>
-        <p class="fineprint">© ${new Date().getUTCFullYear()} TrendVid</p>
+        <div class="footer-hero">
+          <a class="brand" href="${pathFor(lang)}">${logoMark('lg-foot')}<span class="brand-word">TrendVid</span></a>
+          <p class="footer-tagline">${t('footerTagline')}</p>
+        </div>
+        <div class="footer-cols">
+          <div>
+            <h2>${t('footerExplore')}</h2>
+            <ul>${explore.map((c) => html`<li><a href="${pathFor(lang, 'trending', c.code.toLowerCase())}">${c[lang]}</a></li>`)}</ul>
+          </div>
+          <div>
+            <h2>${t('footerCreators')}</h2>
+            <ul>
+              ${TOOLS.map((tool) => html`<li><a href="${pathFor(lang, 'tools', tool.slug)}">${tool.name[lang]}</a></li>`)}
+              <li><a href="${pathFor(lang, 'guides')}">${t('navGuides')}</a></li>
+            </ul>
+          </div>
+          <div>
+            <h2>${t('footerCompany')}</h2>
+            <ul>
+              <li><a href="${pathFor(lang, 'about')}">${t('footerAbout')}</a></li>
+              <li><a href="${pathFor(lang, 'privacy')}">${t('footerPrivacy')}</a></li>
+              <li><a href="${pathFor(lang, 'terms')}">${t('footerTerms')}</a></li>
+              <li><a href="${pathFor(lang, 'contact')}">${t('footerContact')}</a></li>
+              ${SITE.telegramUrl ? html`<li><a href="${SITE.telegramUrl}" rel="noopener" target="_blank">${t('joinTelegram')}</a></li>` : ''}
+            </ul>
+          </div>
+        </div>
+        <div class="footer-base">
+          <p>${t('footerDisclaimer')}</p>
+          <p>© ${new Date().getUTCFullYear()} TrendVid</p>
+        </div>
       </div>
     </footer>`;
 }
@@ -133,6 +167,7 @@ function footer(lang) {
  * @param {{ar?: string, en?: string}} [page.alternates]  hreflang targets (omit a language that has no version)
  * @param {boolean} page.ads            true only for pages without YouTube data
  * @param {*} page.body
+ * @param {'trending'|'tools'|'guides'} [page.nav]  highlighted navigation item
  * @param {object[]} [page.schema]      JSON-LD objects
  * @param {string[]} [page.scripts]     extra module scripts (paths under /assets/js/)
  * @param {boolean} [page.noindex]
@@ -140,12 +175,13 @@ function footer(lang) {
  * @param {string} [page.ogType]
  */
 export function layout(page) {
-  const { lang, title, path, alternates = {}, ads = false, body, schema = [], scripts = [], noindex = false } = page;
+  const { lang, title, path, alternates = {}, ads = false, body, schema = [], scripts = [], noindex = false, nav = null } = page;
   const siteUrl = page.siteUrl || SITE.url;
   const description = truncate(page.description, 158);
   const canonical = absoluteUrl(siteUrl, path);
   const ogImage = absoluteUrl(siteUrl, '/assets/img/og.png');
   const showAds = Boolean(ads && ADS.enabled);
+  const font = lang === 'ar' ? 'arabic' : 'latin';
 
   const hreflangs = Object.entries(alternates).filter(([, p]) => p);
   const xDefault = alternates.ar ? alternates.ar : null;
@@ -154,14 +190,15 @@ export function layout(page) {
 ${html`<html lang="${lang}" dir="${dirFor(lang)}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>${title}</title>
   <meta name="description" content="${description}">
   <link rel="canonical" href="${canonical}">
   ${hreflangs.map(([l, p]) => html`<link rel="alternate" hreflang="${l}" href="${absoluteUrl(siteUrl, p)}">`)}
   ${xDefault ? html`<link rel="alternate" hreflang="x-default" href="${absoluteUrl(siteUrl, xDefault)}">` : ''}
   ${noindex ? html`<meta name="robots" content="noindex, follow">` : ''}
-  <meta name="theme-color" content="#0f1115">
+  <meta name="theme-color" content="#07070c">
+  <meta name="color-scheme" content="dark light">
   <meta property="og:site_name" content="TrendVid">
   <meta property="og:type" content="${page.ogType || 'website'}">
   <meta property="og:title" content="${title}">
@@ -170,19 +207,23 @@ ${html`<html lang="${lang}" dir="${dirFor(lang)}">
   <meta property="og:image" content="${ogImage}">
   <meta property="og:locale" content="${lang === 'ar' ? 'ar_AR' : 'en_US'}">
   <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="preload" href="/assets/fonts/readex-pro-${font}.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/assets/css/site.css?v=${ASSET_VERSION}">
-  ${raw('<script>try{var m=localStorage.getItem("tv-theme");if(m)document.documentElement.dataset.theme=m}catch(e){}</script>')}
+  ${raw('<script>try{var m=localStorage.getItem("tv-theme");if(m)document.documentElement.dataset.theme=m}catch(e){}document.documentElement.classList.add("js")</script>')}
   ${ANALYTICS.enabled ? html`<meta name="tv-ga" content="${ANALYTICS.id}" data-consent-mode="${ANALYTICS.consentMode ? '1' : '0'}">` : ''}
   ${showAds ? html`<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADS.client}" crossorigin="anonymous"></script>` : ''}
   ${schema.map((s) => jsonLd(s))}
 </head>
 <body>
-  ${header(lang, alternates)}
-  <main id="main" class="wrap">
+  <div class="aurora" aria-hidden="true"></div>
+  ${header(lang, alternates, nav)}
+  <main id="main">
     ${body}
   </main>
   ${footer(lang)}
+  ${tabbar(lang, nav)}
   <script type="module" src="/assets/js/site.js?v=${ASSET_VERSION}"></script>
   ${scripts.map((s) => html`<script type="module" src="/assets/js/${s}?v=${ASSET_VERSION}"></script>`)}
 </body>

@@ -32,6 +32,20 @@ Other policy constraints built in: no derived metrics (we show YouTube's own ord
 trending data expires after 26 hours (limit is 30 days), and privacy/terms carry the required
 YouTube API Services disclosures.
 
+## Design system ("Pulse")
+
+- Dark-first, cinematic; light theme via the header toggle (remembered in `localStorage`).
+- One signature gradient (ember `#FF7A3D` → pink `#FF2E7E` → violet `#8B5CF6`) for the brand mark,
+  headline highlights and primary CTAs only; everything else is neutral so thumbnails carry color.
+- Typography: **Readex Pro** (variable, Arabic + Latin), self-hosted in `public/assets/fonts/`
+  (SIL OFL, licence alongside) — no Google Fonts requests.
+- Icons: hand-drawn inline SVGs in `src/views/icons.js`; tokens and components in
+  `public/assets/css/site.css` (logical properties, so RTL and LTR share one stylesheet).
+- Motion is CSS-first (reveal on scroll, hover lift, live pulse) and disabled under
+  `prefers-reduced-motion`. Phones get an app-style bottom tab bar.
+- Conversion path: trending (no ads) → creator band / "Free tools" CTA → tool pages (ads in the
+  content column and sticky sidebar, plus affiliate recommendations).
+
 ## Layout
 
 ```

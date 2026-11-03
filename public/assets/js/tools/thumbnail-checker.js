@@ -55,4 +55,20 @@ if (root) {
     img.src = objectUrl;
   });
   root.addEventListener('submit', (e) => e.preventDefault());
+
+  // Drag and drop onto the drop zone feeds the same file input.
+  const zone = root.querySelector('.dropzone');
+  if (zone) {
+    ['dragenter', 'dragover'].forEach((type) => zone.addEventListener(type, (e) => {
+      e.preventDefault();
+      zone.classList.add('is-over');
+    }));
+    ['dragleave', 'drop'].forEach((type) => zone.addEventListener(type, () => zone.classList.remove('is-over')));
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (!e.dataTransfer?.files?.length) return;
+      input.files = e.dataTransfer.files;
+      input.dispatchEvent(new Event('change'));
+    });
+  }
 }

@@ -28,7 +28,9 @@ export function normalizeVideo(item) {
     channelId: snippet.channelId || '',
     publishedAt: snippet.publishedAt || '',
     viewCount: String(item?.statistics?.viewCount ?? ''),
-    thumb,
+    thumb, // 320x180 - grid cards
+    thumbHigh: thumbs.high?.url || thumb, // 480x360 (letterboxed; cropped to 16:9 by CSS) - retina cards
+    thumbMax: thumbs.maxres?.url || thumbs.standard?.url || thumbs.high?.url || thumb, // spotlight
   };
 }
 
